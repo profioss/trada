@@ -1,0 +1,2 @@
+# trada
+Trading Data utils
