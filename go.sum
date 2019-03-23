@@ -1,0 +1,4 @@
+github.com/pelletier/go-toml v1.2.0 h1:T5zMGML61Wp+FlcbWjRDT7yAxhJNAiPPLOFECq181zc=
+github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
+github.com/profioss/clog v0.0.0-20180130113329-a2b20e658943 h1:2iL3dgQGV8sVpWmDVxabDxXrEaE1OSXyThKjlXHCZYM=
+github.com/profioss/clog v0.0.0-20180130113329-a2b20e658943/go.mod h1:fS9dGOcZkNDfeFr0WxhBleOrD9VosU9lNMiS3cF9xwA=

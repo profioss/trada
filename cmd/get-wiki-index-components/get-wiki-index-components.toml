@@ -1,0 +1,46 @@
+
+[Setup]
+  WikiAPI = "https://en.wikipedia.org/w/api.php"
+  Timeout = 20 # request timeout in seconds
+  OutputDir = "var/data/index"
+  LogFile = "var/log/get-wiki-index-components.log"
+  LogLevel = "info" # levels: disabled | error | warning | info | debug
+
+# Resources define Wiki pages.
+# Name - label of the resource.
+# PageName - wiki page.
+#   for example "NASDAQ-100" is page accessible at:
+#   https://en.wikipedia.org/wiki/NASDAQ-100
+# Section - place where table with index componets is located on Wiki page.
+# MinCnt - for simple check of parsed components
+#   the check passes if number of components > MinCnt
+
+[[Resources]]
+  Name = "DJIA"
+  PageName = "Dow_Jones_Industrial_Average"
+  OutputFile = "DJIA-components.csv"
+  Section = 1
+  MinCnt = 25
+
+# TODO - specify Section
+[[Resources]]
+  Name = "NDX"
+  PageName = "NASDAQ-100"
+  OutputFile = "NDX-components.csv"
+  Section = 0 # TODO
+  MinCnt = 95
+
+[[Resources]]
+  Name = "OEX"
+  PageName = "S&P_100"
+  OutputFile = "OEX-components.csv"
+  Section = 3
+  MinCnt = 95
+
+[[Resources]]
+  Name = "SPX"
+  PageName = "List_of_S&P_500_companies"
+  OutputFile = "SPX-components.csv"
+  Section = 1
+  MinCnt = 495
+
