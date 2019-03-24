@@ -2,10 +2,14 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"syscall"
@@ -19,6 +23,7 @@ func main() {
 	if err != nil {
 		log.Fatal("App init error: ", err)
 	}
+	defer app.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	sigChan := make(chan os.Signal, 1)
@@ -73,8 +78,63 @@ func do(ctx context.Context, app App) error {
 }
 
 func getNparse(ctx context.Context, app App, ds DataSrc) error {
+	fnameSrc, err := getData(ctx, app, ds)
+	if err != nil {
+		app.log.Errorf("%s: getData failed: %s. Leaving file %s", ds.Name, err, fnameSrc)
+		return err
+	}
+	app.log.Debugf("%s: getData to %s - OK", ds.Name, fnameSrc)
+
+	if !app.updateTstData {
+		defer os.Remove(fnameSrc)
+	}
+
+	fnameDst, err := parseData(app, fnameSrc, ds)
+	if err != nil {
+		app.log.Errorf("%s: parseData failed: %s", ds.Name, err)
+		return err
+	}
+	app.log.Debugf("%s: parseData to %s - OK", ds.Name, fnameDst)
+	app.log.Infof("%s: %s - OK", ds.Name, fnameDst)
 
 	return nil
+}
+
+func parseData(app App, fpath string, ds DataSrc) (string, error) {
+	// TODO
+	fname := filepath.Join(app.Setup.OutputDir, ds.OutputFile)
+
+	return fname, nil
+}
+
+func getData(ctx context.Context, app App, ds DataSrc) (string, error) {
+	u, err := mkURL(app.Config, ds)
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := app.client.Get(u.String())
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		// TODO - check what codes API returns - if codes are significant
+		return "", fmt.Errorf("HTTP error: %d for %s", resp.StatusCode, u.String())
+	}
+
+	fname := filepath.Join(app.Setup.OutputDir, ds.OutputFile+".json")
+	fd, err := os.Create(fname)
+	if err != nil {
+		return "", err
+	}
+	defer fd.Close()
+	_, err = io.Copy(fd, resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return fd.Name(), nil
 }
 
 func mkURL(conf Config, ds DataSrc) (url.URL, error) {

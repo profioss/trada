@@ -16,7 +16,8 @@ type Config struct {
 	Resources []DataSrc
 
 	// cmd line flag, not part of the config file
-	verbose bool
+	updateTstData bool
+	verbose       bool
 }
 
 // Validate checks if Config is valid.
@@ -95,8 +96,10 @@ func (ds DataSrc) Validate() error {
 
 func initConfig() (Config, error) {
 	optConf := flag.String("c", "config/get-wiki-index-components.toml", "config file")
+	optLogLevel := flag.String("log-level", "", "log levels: disabled | error | warning | info | debug")
 	optDirOut := flag.String("o", "", "output data directory")
 	optTimeout := flag.Uint("t", 0, "request timeout in seconds")
+	optTstData := flag.Bool("update-test-data", false, "update test data - use with -o testdata")
 	optVerb := flag.Bool("v", false, "verbose mode")
 	flag.Parse()
 
@@ -113,6 +116,7 @@ func initConfig() (Config, error) {
 	}
 
 	conf.verbose = *optVerb
+	conf.updateTstData = *optTstData
 
 	conf.Setup.Timeout = time.Duration(conf.Setup.Timeout) * time.Second
 	if *optTimeout > 0 {
@@ -127,6 +131,9 @@ func initConfig() (Config, error) {
 	// log levels: disabled | error | warning | info | debug
 	if conf.Setup.LogLevel == "" {
 		conf.Setup.LogLevel = "info"
+	}
+	if *optLogLevel != "" {
+		conf.Setup.LogLevel = *optLogLevel
 	}
 	// disable logging if no log file was specified
 	if conf.Setup.LogFile == "" {

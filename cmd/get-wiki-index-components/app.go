@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/profioss/clog"
@@ -11,8 +12,14 @@ import (
 // App defines application.
 type App struct {
 	Config
-	client *http.Client
-	log    clog.Logger
+	client  *http.Client
+	log     clog.Logger
+	logFile *os.File
+}
+
+// Close finishes App by closing open resources.
+func (a *App) Close() {
+	a.logFile.Close()
 }
 
 // Validate checks if App is valid.
@@ -47,7 +54,6 @@ func NewApp() (App, error) {
 	if err != nil {
 		return app, err
 	}
-	defer logf.Close()
 	logger, err := clog.New(logf, conf.Setup.LogLevel, conf.verbose)
 	if err != nil {
 		return app, err
