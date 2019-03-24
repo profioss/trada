@@ -3,11 +3,11 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"time"
 
 	toml "github.com/pelletier/go-toml"
-	"github.com/profioss/clog"
 )
 
 // Config is main configuration.
@@ -15,9 +15,27 @@ type Config struct {
 	Setup     Setup
 	Resources []DataSrc
 
-	// not part of the config file
-	log     clog.Logger
+	// cmd line flag, not part of the config file
 	verbose bool
+}
+
+// Validate checks if Config is valid.
+func (c Config) Validate() error {
+	switch {
+	case c.Setup.Validate() != nil:
+		return fmt.Errorf("Config: %s", c.Setup.Validate())
+
+	case len(c.Resources) == 0:
+		return errors.New("Config: empty Resources definition")
+	}
+
+	for _, r := range c.Resources {
+		if r.Validate() != nil {
+			return fmt.Errorf("Config: %s", r.Validate())
+		}
+	}
+
+	return nil
 }
 
 // Setup defines command setup.
@@ -30,6 +48,22 @@ type Setup struct {
 	OutputDir string
 }
 
+// Validate checks if Setup is valid.
+func (s Setup) Validate() error {
+	switch {
+	case s.WikiAPI == "":
+		return errors.New("Setup: WikiAPI is not specified")
+
+	case s.OutputDir == "":
+		return errors.New("Setup: Output Directory is not specified")
+
+	case s.Timeout < 1:
+		return errors.New("Setup: Timeout is set too low")
+	}
+
+	return nil
+}
+
 // DataSrc defines data sources.
 type DataSrc struct {
 	Name       string
@@ -37,6 +71,26 @@ type DataSrc struct {
 	Section    int
 	MinCnt     int
 	OutputFile string
+}
+
+// Validate checks if DataSrc is valid.
+// TODO - match name with supported parsers
+func (ds DataSrc) Validate() error {
+	switch {
+	case ds.Name == "":
+		return errors.New("DataSrc: Name is not specified")
+
+	case ds.PageName == "":
+		return errors.New("DataSrc: PageName is not specified")
+
+	case ds.Section < 1:
+		return errors.New("DataSrc: Section is < 1")
+
+	case ds.OutputFile == "":
+		return errors.New("DataSrc: OutputFile is not specified")
+	}
+
+	return nil
 }
 
 func initConfig() (Config, error) {
@@ -79,23 +133,5 @@ func initConfig() (Config, error) {
 		conf.Setup.LogLevel = "disabled"
 	}
 
-	return conf, checkConfig(conf)
-}
-
-func checkConfig(c Config) error {
-	switch {
-	case c.Setup.WikiAPI == "":
-		return errors.New("checkConfig: WikiAPI is not specified")
-
-	case c.Setup.OutputDir == "":
-		return errors.New("checkConfig: Output Directory is not specified")
-
-	case c.Setup.Timeout < 1:
-		return errors.New("checkConfig: Timeout is set too low")
-
-	case len(c.Resources) == 0:
-		return errors.New("checkConfig: Empty Resources definition - nothing to do")
-	}
-
-	return nil
+	return conf, conf.Validate()
 }

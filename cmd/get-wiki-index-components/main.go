@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -13,25 +16,63 @@ import (
 	"github.com/profioss/clog"
 )
 
-func main() {
-	exitCode := 0
-	var wg sync.WaitGroup
+// App defines application.
+type App struct {
+	Config
+	client *http.Client
+	log    clog.Logger
+}
+
+// Validate checks if App is valid.
+func (a App) Validate() error {
+	switch {
+	case a.Config.Validate() != nil:
+		return fmt.Errorf("config validation error: %s", a.Config.Validate())
+
+	case a.client == nil:
+		return fmt.Errorf("client is not initialized")
+
+	case a.log == nil:
+		return fmt.Errorf("log is not initialized")
+	}
+
+	return nil
+}
+
+// NewApp creates new App.
+func NewApp() (App, error) {
+	app := App{}
 
 	conf, err := initConfig()
 	if err != nil {
-		log.Fatal("initConfig error: ", err)
+		return app, err
 	}
+	app.Config = conf
+
+	app.client = mkClient(conf)
 
 	logf, err := clog.OpenFile(conf.Setup.LogFile)
 	if err != nil {
-		log.Fatal("Log file error: ", err)
+		return app, err
 	}
 	defer logf.Close()
 	logger, err := clog.New(logf, conf.Setup.LogLevel, conf.verbose)
 	if err != nil {
-		log.Fatal("Logger error: ", err)
+		return app, err
 	}
-	conf.log = logger
+	app.log = logger
+
+	return app, app.Validate()
+}
+
+func main() {
+	exitCode := 0
+	wg := sync.WaitGroup{}
+
+	app, err := NewApp()
+	if err != nil {
+		log.Fatal("App init error: ", err)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	sigChan := make(chan os.Signal, 1)
@@ -41,7 +82,7 @@ func main() {
 	defer func() {
 		signal.Stop(sigChan)
 		cancel()
-		cleanup(conf)
+		cleanup(app)
 		wg.Wait()
 		os.Exit(exitCode)
 	}()
@@ -50,36 +91,42 @@ func main() {
 		wg.Add(1)
 		select {
 		case s := <-sigChan:
-			conf.log.Warnf("Got %s signal - exitting", s)
+			app.log.Warnf("Got %s signal - exitting", s)
 			cancel()
-			conf.log.Info("Stopped")
+			app.log.Info("Stopped")
 		case <-ctx.Done():
-			conf.log.Info("DONE")
+			app.log.Info("DONE")
 		}
 		wg.Done()
 	}()
 
-	err = os.MkdirAll(conf.Setup.OutputDir, os.FileMode(0755))
+	err = os.MkdirAll(app.Setup.OutputDir, os.FileMode(0755))
 	if err != nil {
 		exitCode = 1
-		conf.log.Errorf("Prepare OutputDir error: %s", err)
+		app.log.Errorf("Prepare OutputDir error: %s", err)
 		return
 	}
 
-	conf.log.Info("Starting")
+	app.log.Info("Starting")
 
-	err = do(ctx, conf)
+	err = do(ctx, app)
 	if err != nil {
 		exitCode = 1
-		conf.log.Errorf("Fetch data error: %s", err)
+		app.log.Errorf("Fetch data error: %s", err)
 		return
 	}
 }
 
-func do(ctx context.Context, conf Config) error {
-	for _, r := range conf.Resources {
-		conf.log.Info("Fetching ", r.Name)
+func do(ctx context.Context, app App) error {
+	for _, r := range app.Resources {
+		app.log.Info("Fetching ", r.Name)
+		getNparse(ctx, app, r)
 	}
+
+	return nil
+}
+
+func getNparse(ctx context.Context, app App, ds DataSrc) error {
 
 	return nil
 }
@@ -90,6 +137,23 @@ func mkClient(conf Config) *http.Client {
 	return &http.Client{Transport: tr, Timeout: timeout}
 }
 
-func cleanup(conf Config) {
-	conf.log.Info("Cleaning up...")
+func mkURL(conf Config, ds DataSrc) (url.URL, error) {
+	u, err := url.Parse(conf.Setup.WikiAPI)
+	if err != nil {
+		return url.URL{}, err
+	}
+
+	q := u.Query()
+	q.Set("action", "parse")
+	q.Set("format", "json")
+	q.Set("prop", "text")
+	q.Set("page", ds.PageName)
+	q.Set("section", strconv.Itoa(ds.Section))
+	u.RawQuery = q.Encode()
+
+	return *u, nil
+}
+
+func cleanup(app App) {
+	app.log.Info("Cleaning up...")
 }
