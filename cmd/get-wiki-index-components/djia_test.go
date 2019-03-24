@@ -9,6 +9,6 @@ func TestParseDJIA(t *testing.T) {
 	}
 
 	for _, r := range rows {
-		t.Logf("%s : %s : %s", r[0], r[1], r[2])
+		t.Logf("ticker: %s, company: %s, exchange: %s", r[2], r[0], r[1])
 	}
 }

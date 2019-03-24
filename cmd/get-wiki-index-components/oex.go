@@ -9,7 +9,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-func parseDJIA() (output [][]string, err error) {
+func parseOEX() (output [][]string, err error) {
 	// HTML DOM walking can enter unexpected branch which could cause panic
 	// e.g. accessing x.FirstChild.NextSibling where FirstChild is nil
 	// report panic(s) as error to simplify error handling
@@ -19,13 +19,13 @@ func parseDJIA() (output [][]string, err error) {
 		}
 	}()
 
-	fname := "testdata/DJIA-components.csv.json"
+	fname := "testdata/OEX-components.csv.json"
 	wd, err := parseWikiData(fname)
 	if err != nil {
 		return output, err
 	}
 
-	fd, err := os.Create("/tmp/djia.html")
+	fd, err := os.Create("/tmp/oex.html")
 	if err != nil {
 		return output, err
 	}
@@ -48,15 +48,17 @@ func parseDJIA() (output [][]string, err error) {
 				thTd := cell.NextSibling
 				switch {
 				case thTd != nil && thTd.Data == "td":
-					link := thTd.FirstChild
-					if link.Type == html.ElementNode && link.Data == "a" {
-						row = append(row, strings.TrimSpace(link.FirstChild.Data))
+					cell := thTd.FirstChild
+					if cell.Type == html.ElementNode && cell.Data == "a" {
+						row = append(row, strings.TrimSpace(cell.FirstChild.Data))
+					} else {
+						row = append(row, strings.TrimSpace(cell.Data))
 					}
 				case thTd != nil && thTd.Data == "th":
 					// process th if needed
 				}
 			}
-			if len(row) >= 3 {
+			if len(row) >= 2 {
 				output = append(output, row)
 			}
 		}
