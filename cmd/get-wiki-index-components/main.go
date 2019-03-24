@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 
 func main() {
 	exitCode := 0
+	var wg sync.WaitGroup
 
 	conf, err := initConfig()
 	if err != nil {
@@ -40,17 +42,21 @@ func main() {
 		signal.Stop(sigChan)
 		cancel()
 		cleanup(conf)
+		wg.Wait()
 		os.Exit(exitCode)
 	}()
 
 	go func() {
+		wg.Add(1)
 		select {
 		case s := <-sigChan:
-			conf.log.Warnf("got %s signal - exitting", s)
+			conf.log.Warnf("Got %s signal - exitting", s)
 			cancel()
+			conf.log.Info("Stopped")
 		case <-ctx.Done():
 			conf.log.Info("DONE")
 		}
+		wg.Done()
 	}()
 
 	err = os.MkdirAll(conf.Setup.OutputDir, os.FileMode(0755))

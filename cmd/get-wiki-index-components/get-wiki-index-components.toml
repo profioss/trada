@@ -22,12 +22,12 @@
   Section = 1
   MinCnt = 25
 
-# TODO - specify Section
+# TODO - check Section
 [[Resources]]
   Name = "NDX"
   PageName = "NASDAQ-100"
   OutputFile = "NDX-components.csv"
-  Section = 0 # TODO
+  Section = 9
   MinCnt = 95
 
 [[Resources]]
