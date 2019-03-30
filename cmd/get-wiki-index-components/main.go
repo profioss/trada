@@ -15,6 +15,17 @@ import (
 	"syscall"
 )
 
+type parser = func() ([][]string, error)
+
+// Map DataSrc.Name in Config with content parser.
+// NOTE: this mapping is validated - using proper names is required.
+var parsers = map[string]parser{
+	"DJIA": parseDJIA,
+	"OEX":  parseOEX,
+	"SPX":  parseSPX,
+	"NDX":  parseNDX,
+}
+
 func main() {
 	exitCode := 0
 	wg := sync.WaitGroup{}
@@ -59,7 +70,6 @@ func main() {
 	}
 
 	app.log.Info("Starting")
-
 	err = do(ctx, app)
 	if err != nil {
 		exitCode = 1

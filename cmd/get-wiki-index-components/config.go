@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	toml "github.com/pelletier/go-toml"
@@ -84,11 +85,21 @@ func (ds DataSrc) Validate() error {
 	case ds.PageName == "":
 		return errors.New("DataSrc: PageName is not specified")
 
-	case ds.Section < 1:
-		return errors.New("DataSrc: Section is < 1")
-
 	case ds.OutputFile == "":
 		return errors.New("DataSrc: OutputFile is not specified")
+
+	case ds.Section < 1:
+		return errors.New("DataSrc: Section is < 1")
+	}
+
+	_, ok := parsers[ds.Name]
+	if !ok {
+		names := []string{}
+		for k := range parsers {
+			names = append(names, k)
+		}
+		return fmt.Errorf("DataSrc: Name '%s' is not valid. Use one of: %s",
+			ds.Name, strings.Join(names, ", "))
 	}
 
 	return nil
