@@ -22,7 +22,7 @@ func TestDataSrcValidation(t *testing.T) {
 		{
 			label: "invalid Name",
 			ds: DataSrc{
-				Name:       "DJIAxxx", // invalid Name
+				Name:       "DJIAxxx",
 				PageName:   "Dow_Jones_Industrial_Average",
 				OutputFile: "DJIA-components.csv",
 				Section:    1,

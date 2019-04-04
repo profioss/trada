@@ -22,7 +22,6 @@
   Section = 1
   MinCnt = 25
 
-# TODO - check Section
 [[Resources]]
   Name = "NDX"
   PageName = "NASDAQ-100"

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/csv"
 	"fmt"
 	"io"
 	"log"
@@ -11,11 +12,15 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 )
 
-type parser = func() ([][]string, error)
+const dirPerms = os.ModePerm
+const filePerms os.FileMode = 0644
+
+type parser = func(r io.Reader) ([][]string, error)
 
 // Map DataSrc.Name in Config with content parser.
 // NOTE: this mapping is validated - using proper names is required.
@@ -99,22 +104,82 @@ func getNparse(ctx context.Context, app App, ds DataSrc) error {
 		defer os.Remove(fnameSrc)
 	}
 
-	fnameDst, err := parseData(app, fnameSrc, ds)
+	wd, err := parseWikiData(fnameSrc)
+	if err != nil {
+		return err
+	}
+
+	components, err := parseData(app, wd, ds)
 	if err != nil {
 		app.log.Errorf("%s: parseData failed: %s", ds.Name, err)
 		return err
 	}
-	app.log.Debugf("%s: parseData to %s - OK", ds.Name, fnameDst)
-	app.log.Infof("%s: %s - OK", ds.Name, fnameDst)
+	data := [][]string{
+		[]string{"sym", "name"}, // CSV output header
+	}
+	data = append(data, components...)
 
+	fnameDst := filepath.Join(app.Setup.OutputDir, ds.OutputFile)
+	err = saveData(fnameDst, data)
+	if err != nil {
+		app.log.Errorf("%s: saveData to %s failed: %s", ds.Name, fnameDst, err)
+		return err
+	}
+
+	// app.log.Debugf("%s: parseData to %s - OK", ds.Name, fnameDst)
+	app.log.Infof("%s: %s - OK", ds.Name, fnameDst)
 	return nil
 }
 
-func parseData(app App, fpath string, ds DataSrc) (string, error) {
-	// TODO
-	fname := filepath.Join(app.Setup.OutputDir, ds.OutputFile)
+func parseData(app App, wd wikiData, ds DataSrc) ([][]string, error) {
+	p, ok := parsers[ds.Name]
+	if !ok {
+		msg := fmt.Sprintf("No parser for %s", ds.Name)
+		app.log.Error(msg)
+		return [][]string{}, fmt.Errorf(msg)
+	}
 
-	return fname, nil
+	wdr := strings.NewReader(wd.Parsed.Content.Text)
+	components, err := p(wdr)
+	if err != nil {
+		app.log.Errorf("%s: parsing table failed: %s", ds.Name, err)
+		return [][]string{}, err
+	}
+
+	return components, nil
+}
+
+func saveData(fpath string, data [][]string) error {
+	dirname := filepath.Dir(fpath)
+	err := os.MkdirAll(dirname, dirPerms)
+	if err != nil {
+		return err
+	}
+
+	fdTmp, err := os.Create(fpath + ".swp")
+	if err != nil {
+		return fmt.Errorf("creating temp output file failed: %s", err)
+	}
+	defer os.Remove(fdTmp.Name())
+
+	w := csv.NewWriter(fdTmp)
+	w.Comma = ';'
+	w.WriteAll(data)
+
+	if err := w.Error(); err != nil {
+		return err
+	}
+
+	err = os.Chmod(fdTmp.Name(), filePerms)
+	if err != nil {
+		return err
+	}
+	err = os.Rename(fdTmp.Name(), fpath)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func getData(ctx context.Context, app App, ds DataSrc) (string, error) {
