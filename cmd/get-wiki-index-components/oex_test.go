@@ -6,6 +6,36 @@ import (
 )
 
 func TestParseOEX(t *testing.T) {
+	components := []struct {
+		symbol  string
+		company string
+	}{
+		{
+			symbol:  "AAPL",
+			company: "Apple",
+		},
+		{
+			symbol:  "AMZN",
+			company: "Amazon",
+		},
+		{
+			symbol:  "GOOGL",
+			company: "Alphabet",
+		},
+		{
+			symbol:  "JNJ",
+			company: "Johnson & Johnson",
+		},
+		{
+			symbol:  "JPM",
+			company: "JPMorgan Chase",
+		},
+		{
+			symbol:  "MSFT",
+			company: "Microsoft",
+		},
+	}
+
 	fname := "testdata/OEX-components.csv.json"
 	wd, err := parseWikiData(fname)
 	if err != nil {
@@ -18,7 +48,18 @@ func TestParseOEX(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, r := range rows {
-		t.Logf("ticker: %s, company: %s", r[0], r[1])
+	found := []string{}
+	for _, c := range components {
+		for _, r := range rows {
+			if r[0] == c.symbol && strings.Contains(r[1], c.company) {
+				found = append(found, c.symbol)
+				break
+			}
+		}
+	}
+
+	if len(components) != len(found) {
+		t.Errorf("Of %d components %d found: %s",
+			len(components), len(found), strings.Join(found, ", "))
 	}
 }
