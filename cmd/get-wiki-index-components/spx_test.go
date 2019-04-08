@@ -48,6 +48,11 @@ func TestParseSPX(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	minCnt := 499 // minimum number of symbols
+	if len(rows) < minCnt {
+		t.Fatalf("expected at least %d parsed symbols, got: %d", minCnt, len(rows))
+	}
+
 	found := []string{}
 	for _, c := range components {
 		for _, r := range rows {
