@@ -19,6 +19,7 @@ type App struct {
 
 // Close finishes App by closing open resources.
 func (a *App) Close() {
+	a.client.CloseIdleConnections()
 	a.logFile.Close()
 }
 
@@ -38,8 +39,8 @@ func (a App) Validate() error {
 	return nil
 }
 
-// NewApp creates new App.
-func NewApp() (App, error) {
+// newApp creates new App.
+func newApp() (App, error) {
 	app := App{}
 
 	conf, err := initConfig()
@@ -64,7 +65,10 @@ func NewApp() (App, error) {
 }
 
 func mkClient(conf Config) *http.Client {
-	tr := &http.Transport{DisableKeepAlives: false}
-	timeout := time.Duration(conf.Setup.Timeout)
-	return &http.Client{Transport: tr, Timeout: timeout}
+	return &http.Client{
+		Transport: &http.Transport{
+			DisableKeepAlives: false,
+		},
+		Timeout: time.Duration(conf.Setup.Timeout),
+	}
 }

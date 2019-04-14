@@ -17,13 +17,13 @@ import (
 	"syscall"
 )
 
-const dirPerms = os.ModePerm
+const dirPerms os.FileMode = 0755
 const filePerms os.FileMode = 0644
 
 type parser = func(r io.Reader) ([][]string, error)
 
-// Map DataSrc.Name in Config with content parser.
-// NOTE: this mapping is validated - using proper names is required.
+// Mapping of DataSrc.Name in Config with content parser.
+// NOTE: this is validated - using proper names is required.
 var parsers = map[string]parser{
 	"DJIA": parseDJIA,
 	"OEX":  parseOEX,
@@ -35,7 +35,7 @@ func main() {
 	exitCode := 0
 	wg := sync.WaitGroup{}
 
-	app, err := NewApp()
+	app, err := newApp()
 	if err != nil {
 		log.Fatal("App init error: ", err)
 	}
@@ -67,7 +67,7 @@ func main() {
 		wg.Done()
 	}()
 
-	err = os.MkdirAll(app.Setup.OutputDir, os.FileMode(0755))
+	err = os.MkdirAll(app.Setup.OutputDir, dirPerms)
 	if err != nil {
 		exitCode = 1
 		app.log.Errorf("Prepare OutputDir error: %s", err)
@@ -100,7 +100,7 @@ func getNparse(ctx context.Context, app App, ds DataSrc) error {
 	}
 	app.log.Debugf("%s: getData to %s - OK", ds.Name, fnameSrc)
 
-	if !app.updateTstData {
+	if !app.updateTstData { // update testing data mode
 		defer os.Remove(fnameSrc)
 	}
 
@@ -114,6 +114,8 @@ func getNparse(ctx context.Context, app App, ds DataSrc) error {
 		app.log.Errorf("%s: parseData failed: %s", ds.Name, err)
 		return err
 	}
+	app.log.Debugf("%s: parseData - OK", ds.Name)
+
 	data := [][]string{
 		[]string{"sym", "name"}, // CSV output header
 	}
@@ -125,8 +127,8 @@ func getNparse(ctx context.Context, app App, ds DataSrc) error {
 		app.log.Errorf("%s: saveData to %s failed: %s", ds.Name, fnameDst, err)
 		return err
 	}
+	app.log.Debugf("%s: saveData to %s - OK", ds.Name, fnameDst)
 
-	// app.log.Debugf("%s: parseData to %s - OK", ds.Name, fnameDst)
 	app.log.Infof("%s: %s - OK", ds.Name, fnameDst)
 	return nil
 }
@@ -165,7 +167,6 @@ func saveData(fpath string, data [][]string) error {
 	w := csv.NewWriter(fdTmp)
 	w.Comma = ';'
 	w.WriteAll(data)
-
 	if err := w.Error(); err != nil {
 		return err
 	}
@@ -194,7 +195,7 @@ func getData(ctx context.Context, app App, ds DataSrc) (string, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		// TODO - check what codes API returns - if codes are significant
+		// TODO - check what codes the API returns - if it behaves correctly
 		return "", fmt.Errorf("HTTP error: %d for %s", resp.StatusCode, u.String())
 	}
 
@@ -204,6 +205,7 @@ func getData(ctx context.Context, app App, ds DataSrc) (string, error) {
 		return "", err
 	}
 	defer fd.Close()
+
 	_, err = io.Copy(fd, resp.Body)
 	if err != nil {
 		return "", err
