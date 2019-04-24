@@ -1,4 +1,5 @@
 
 Update test data by changing to util basic src dir and running:
-  go run *.go -c get-wiki-index-components.toml -update-test-data -o testdata
+  go build && ./get-wiki-index-components -c get-wiki-index-components.toml -update-test-data -o testdata
+  go test -v
 

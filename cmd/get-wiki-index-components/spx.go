@@ -55,8 +55,8 @@ func parseSPX(r io.Reader) (output [][]string, err error) {
 	f(doc)
 
 	for _, r := range rows {
-		company := r[0]
-		ticker := r[1]
+		ticker := r[0]
+		company := r[1]
 		row := []string{ticker, company}
 		output = append(output, row)
 	}
