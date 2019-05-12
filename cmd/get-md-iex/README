@@ -1,0 +1,12 @@
+
+Get market data from IEX exchange.
+
+Docs
+  https://iextrading.com/developer
+  https://iextrading.com/developer/docs/#chart
+  https://iextrading.com/developer/docs/#stocks
+
+List of instruments
+  endpoint: /ref-data/symbols
+  https://api.iextrading.com/1.0/ref-data/symbols
+

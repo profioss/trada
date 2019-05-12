@@ -1,0 +1,30 @@
+
+[Setup]
+  Range = "5y"
+  BaseURL = "https://api.iextrading.com/1.0"
+  MaxProcs = 2
+  Timeout = 30 # request timeout in seconds
+  OutputDir = "var/data/stocks"
+  LogFile = "var/log/get-md-iex.log"
+  LogLevel = "info" # levels: disabled | error | warning | info | debug
+
+  ##
+  # You can combine generated watchlists with manually managed ones.
+  #
+  Watchlists = [
+    "var/data/index/DJIA-components.csv",
+    "var/data/index/NDX-components.csv",
+    "var/data/index/OEX-components.csv",
+    "var/data/index/SPX-components.csv",
+    "config/watchlist-custom.csv"
+  ]
+
+##
+# Converts ticker representation in watchlists
+# into data source specific representation.
+#
+[TickerConversion]
+  BF-B = "BF.B"
+  BRK-B = "BRK.B"
+
+
