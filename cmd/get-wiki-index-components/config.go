@@ -130,10 +130,11 @@ func initConfig() (Config, error) {
 	conf.updateTstData = *optTstData
 
 	conf.Setup.Timeout = time.Duration(conf.Setup.Timeout) * time.Second
+	//
+	// override setup from config by cmdline args
 	if *optTimeout > 0 {
 		conf.Setup.Timeout = time.Duration(*optTimeout) * time.Second
 	}
-	// override setup from config by cmdline args
 	if *optDirOut != "" {
 		conf.Setup.OutputDir = *optDirOut
 	}

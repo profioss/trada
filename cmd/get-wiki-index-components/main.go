@@ -167,17 +167,17 @@ func saveData(fpath string, data [][]string) error {
 	w := csv.NewWriter(fdTmp)
 	w.Comma = ';'
 	w.WriteAll(data)
-	if err := w.Error(); err != nil {
-		return err
+	if w.Error() != nil {
+		return fmt.Errorf("temp file error: %s", w.Error())
 	}
 
 	err = os.Chmod(fdTmp.Name(), filePerms)
 	if err != nil {
-		return err
+		return fmt.Errorf("chmod %s %s: %s", filePerms.String(), fdTmp.Name(), err)
 	}
 	err = os.Rename(fdTmp.Name(), fpath)
 	if err != nil {
-		return err
+		return fmt.Errorf("rename %s -> %s: %s", fdTmp.Name(), fpath, err)
 	}
 
 	return nil
