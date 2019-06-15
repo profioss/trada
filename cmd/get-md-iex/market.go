@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,16 +70,19 @@ func getData(ctx context.Context, app App) error {
 
 func fetch(ticker string, app App) ([]byte, error) {
 	body := []byte{}
-	url := mkURL(ticker, app.Config)
+	url, err := mkURL(app.Config, ticker)
+	if err != nil {
+		return nil, fmt.Errorf("mkUrl failed: %v", err)
+	}
 
-	resp, err := app.client.Get(url)
+	resp, err := app.client.Get(url.String())
 	if err != nil {
 		return body, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return body, fmt.Errorf("fetch: HTTP Status: %s. URL: %s", resp.Status, url)
+		return body, fmt.Errorf("fetch: HTTP Status: %s. URL: %s", resp.Status, url.String())
 	}
 
 	body, err = ioutil.ReadAll(resp.Body)
@@ -89,9 +93,20 @@ func fetch(ticker string, app App) ([]byte, error) {
 	return body, nil
 }
 
-func mkURL(ticker string, conf Config) string {
-	return fmt.Sprintf("%s/stock/%s/chart/%s?token=%s",
-		conf.Setup.BaseURL, ticker, conf.Setup.Range, conf.Setup.Token)
+func mkURL(conf Config, ticker string) (url.URL, error) {
+	str := fmt.Sprintf("%s/stock/%s/chart/%s",
+		conf.Setup.BaseURL, ticker, conf.Setup.Range)
+	u, err := url.Parse(str)
+	if err != nil {
+		return url.URL{}, err
+	}
+
+	q := u.Query()
+	q.Set("token", conf.Setup.Token)
+	q.Set("format", "json")
+	u.RawQuery = q.Encode()
+
+	return *u, nil
 }
 
 func toCSV(data []OHLCV) [][]string {
