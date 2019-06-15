@@ -90,7 +90,8 @@ func fetch(ticker string, app App) ([]byte, error) {
 }
 
 func mkURL(ticker string, conf Config) string {
-	return fmt.Sprintf("%s/stock/%s/chart/%s", conf.Setup.BaseURL, ticker, conf.Setup.Range)
+	return fmt.Sprintf("%s/stock/%s/chart/%s?token=%s",
+		conf.Setup.BaseURL, ticker, conf.Setup.Range, conf.Setup.Token)
 }
 
 func toCSV(data []OHLCV) [][]string {

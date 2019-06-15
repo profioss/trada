@@ -1,7 +1,11 @@
-
+##
+# Main Setup Params
+#
 [Setup]
   Range = "5y"
-  BaseURL = "https://api.iextrading.com/1.0"
+  BaseURL = "https://cloud.iexapis.com/v1" # production service
+  #BaseURL = "https://sandbox.iexapis.com/v1" # devel sandbox URL
+  Token = "xxx"
   MaxProcs = 2
   Timeout = 30 # request timeout in seconds
   OutputDir = "var/data/stocks"

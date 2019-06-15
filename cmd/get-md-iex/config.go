@@ -61,6 +61,7 @@ func (c Config) Validate() error {
 type Setup struct {
 	Range      dataRange
 	BaseURL    string
+	Token      string
 	Timeout    time.Duration
 	MaxProcs   int
 	LogFile    string
