@@ -2,7 +2,9 @@
 # Main Setup Params
 #
 [Setup]
-  Range = "5y"
+  # https://iexcloud.io/docs/api/#historical-prices
+  # see your API data limit
+  Range = "3m" # 1d
   BaseURL = "https://cloud.iexapis.com/v1" # production service
   #BaseURL = "https://sandbox.iexapis.com/v1" # devel sandbox URL
   Token = "xxx"
@@ -17,9 +19,6 @@
   #
   Watchlists = [
     "var/data/index/DJIA-components.csv",
-    "var/data/index/NDX-components.csv",
-    "var/data/index/OEX-components.csv",
-    "var/data/index/SPX-components.csv",
     "config/watchlist-custom.csv"
   ]
 

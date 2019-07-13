@@ -13,7 +13,7 @@ import (
 
 type dataRange string
 
-var validRange = []dataRange{"5y", "2y", "1y", "ytd", "6m", "3m", "1m"}
+var validRange = []dataRange{"5y", "2y", "1y", "ytd", "6m", "3m", "1m", "1d"}
 
 func (dr dataRange) validate() error {
 	var empty dataRange

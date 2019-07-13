@@ -7,10 +7,9 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
-)
 
-const dirPerms os.FileMode = 0755
-const filePerms os.FileMode = 0644
+	"github.com/profioss/trada/pkg/osutil"
+)
 
 func main() {
 	exitCode := 0
@@ -48,7 +47,7 @@ func main() {
 		wg.Done()
 	}()
 
-	err = os.MkdirAll(app.Setup.OutputDir, dirPerms)
+	err = os.MkdirAll(app.Setup.OutputDir, osutil.DirPerms)
 	if err != nil {
 		exitCode = 1
 		app.log.Errorf("Prepare OutputDir error: %s", err)

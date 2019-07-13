@@ -5,12 +5,16 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
+
+	"github.com/profioss/trada/pkg/osutil"
 )
 
 // OHLCV is one day of historical data.
@@ -47,12 +51,18 @@ func getData(ctx context.Context, app App) error {
 		fname := filepath.Join(app.Config.Setup.OutputDir, t)
 
 		dataOHLC := []OHLCV{}
-		err = json.Unmarshal(data, &dataOHLC)
+		if app.Config.Setup.Range == "1d" {
+			ohlc := OHLCV{}
+			err = json.Unmarshal(data, &ohlc)
+			dataOHLC = append(dataOHLC, ohlc)
+		} else {
+			err = json.Unmarshal(data, &dataOHLC)
+		}
 		if err != nil {
 			// store problematic data to .../dir/fname.json.swp for analysis
 			fname += ".json.swp"
 			app.log.Errorf("%s: unmarshal error: %s; check %s", t, err, fname)
-			ioutil.WriteFile(fname, data, filePerms)
+			osutil.WriteFile(fname, data)
 			continue
 		}
 		dataCSV := toCSV(dataOHLC)
@@ -96,6 +106,10 @@ func fetch(ticker string, app App) ([]byte, error) {
 func mkURL(conf Config, ticker string) (url.URL, error) {
 	str := fmt.Sprintf("%s/stock/%s/chart/%s",
 		conf.Setup.BaseURL, ticker, conf.Setup.Range)
+	if conf.Setup.Range == "1d" {
+		str = fmt.Sprintf("%s/stock/%s/previous", conf.Setup.BaseURL, ticker)
+	}
+
 	u, err := url.Parse(str)
 	if err != nil {
 		return url.URL{}, err
@@ -130,8 +144,66 @@ func toCSV(data []OHLCV) [][]string {
 }
 
 func saveData(fpath string, data [][]string) error {
+	output := data
+	err := osutil.FileExists(fpath)
+	if err == nil {
+		dataMerged, err := mergeData(fpath, data)
+		if err != nil {
+			return fmt.Errorf("mergeData %s failed: %v", fpath, err)
+		}
+		output = dataMerged
+	}
+
+	err = writeData(fpath, output)
+	if err != nil {
+		return fmt.Errorf("writeData %s failed: %v", fpath, err)
+	}
+
+	return nil
+}
+
+func mergeData(fpath string, dataNew [][]string) ([][]string, error) {
+	header := dataNew[0]
+	output := [][]string{header}
+	data := map[string][]string{}
+
+	file, err := os.Open(fpath)
+	if err != nil {
+		return output, fmt.Errorf("open data file error: %v", err)
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	reader.Comma = ';'
+	_, _ = reader.Read() // read CSV header
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return output, fmt.Errorf("read data file error: %v", err)
+		}
+		data[record[0]] = record
+	}
+
+	for _, record := range dataNew[1:] { // skip CSV header
+		data[record[0]] = record
+	}
+
+	toSort := [][]string{}
+	for _, record := range data {
+		toSort = append(toSort, record)
+	}
+	sort.Slice(toSort,
+		func(i, j int) bool { return toSort[i][0] < toSort[j][0] })
+
+	output = append(output, toSort...)
+	return output, nil
+}
+
+func writeData(fpath string, data [][]string) error {
 	dirname := filepath.Dir(fpath)
-	err := os.MkdirAll(dirname, dirPerms)
+	err := os.MkdirAll(dirname, osutil.DirPerms)
 	if err != nil {
 		return err
 	}
@@ -149,9 +221,9 @@ func saveData(fpath string, data [][]string) error {
 		return fmt.Errorf("CSV temp file error: %s", w.Error())
 	}
 
-	err = os.Chmod(fdTmp.Name(), filePerms)
+	err = os.Chmod(fdTmp.Name(), osutil.FilePerms)
 	if err != nil {
-		return fmt.Errorf("chmod %s %s: %s", filePerms.String(), fdTmp.Name(), err)
+		return fmt.Errorf("chmod %s %s: %s", osutil.FilePerms.String(), fdTmp.Name(), err)
 	}
 	err = os.Rename(fdTmp.Name(), fpath)
 	if err != nil {
