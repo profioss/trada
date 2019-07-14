@@ -14,18 +14,10 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/profioss/trada/model/ohlc"
+	"github.com/profioss/trada/model/ohlc/ohlcio"
 	"github.com/profioss/trada/pkg/osutil"
 )
-
-// OHLCV is one day of historical data.
-type OHLCV struct {
-	Date   string  `json:"date"`
-	Open   float64 `json:"open"`
-	High   float64 `json:"high"`
-	Low    float64 `json:"low"`
-	Close  float64 `json:"close"`
-	Volume uint64  `json:"volume"`
-}
 
 func getData(ctx context.Context, app App) error {
 	var err error
@@ -50,9 +42,9 @@ func getData(ctx context.Context, app App) error {
 
 		fname := filepath.Join(app.Config.Setup.OutputDir, t)
 
-		dataOHLC := []OHLCV{}
+		dataOHLC := []ohlc.OHLC{}
 		if app.Config.Setup.Range == "1d" {
-			ohlc := OHLCV{}
+			ohlc := ohlc.OHLC{}
 			err = json.Unmarshal(data, &ohlc)
 			dataOHLC = append(dataOHLC, ohlc)
 		} else {
@@ -65,7 +57,7 @@ func getData(ctx context.Context, app App) error {
 			osutil.WriteFile(fname, data)
 			continue
 		}
-		dataCSV := toCSV(dataOHLC)
+		dataCSV := ohlcio.ToCSV(dataOHLC)
 
 		fname += ".csv"
 		err = saveData(fname, dataCSV)
@@ -121,26 +113,6 @@ func mkURL(conf Config, ticker string) (url.URL, error) {
 	u.RawQuery = q.Encode()
 
 	return *u, nil
-}
-
-func toCSV(data []OHLCV) [][]string {
-	dataCSV := [][]string{}
-	// header
-	dataCSV = append(dataCSV, []string{"Date", "Open", "High", "Low", "Close", "Volume"})
-
-	for _, ohlc := range data {
-		row := []string{
-			ohlc.Date,
-			fmt.Sprintf("%.2f", ohlc.Open),
-			fmt.Sprintf("%.2f", ohlc.High),
-			fmt.Sprintf("%.2f", ohlc.Low),
-			fmt.Sprintf("%.2f", ohlc.Close),
-			fmt.Sprintf("%d", ohlc.Volume),
-		}
-		dataCSV = append(dataCSV, row)
-	}
-
-	return dataCSV
 }
 
 func saveData(fpath string, data [][]string) error {

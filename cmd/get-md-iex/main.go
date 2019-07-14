@@ -58,7 +58,7 @@ func main() {
 	err = do(ctx, app)
 	if err != nil {
 		exitCode = 1
-		app.log.Errorf("Fetch data error: %s", err)
+		app.log.Errorf("Get data error: %s", err)
 		return
 	}
 }

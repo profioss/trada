@@ -36,6 +36,14 @@ func (dr dataRange) validate() error {
 		dr, strings.Join(hint, ", "))
 }
 
+func rangeLstStr(rr []dataRange) string {
+	lst := make([]string, len(rr))
+	for i := range rr {
+		lst[i] = string(rr[i])
+	}
+	return strings.Join(lst, "|")
+}
+
 // Config is main configuration.
 type Config struct {
 	Setup            Setup
@@ -96,7 +104,8 @@ func initConfig() (Config, error) {
 	optConf := flag.String("c", "config/get-md-iex.toml", "config file")
 	optLogLevel := flag.String("log-level", "", "log levels: disabled | error | warning | info | debug")
 	optDirOut := flag.String("o", "", "output data directory")
-	optSymbols := flag.String("s", "", "symbols delimited by comma: SPY,QQQ,DIA")
+	optRange := flag.String("r", "", "data range, use one of: "+rangeLstStr(validRange))
+	optSymbols := flag.String("s", "", "symbols delimited by comma (ex: SPY,QQQ,DIA)")
 	optTimeout := flag.Uint("t", 0, "request timeout in seconds")
 	// optTstData := flag.Bool("update-test-data", false, "update test data - use with -o testdata")
 	optVerb := flag.Bool("v", false, "verbose mode")
@@ -125,6 +134,9 @@ func initConfig() (Config, error) {
 	}
 	if *optDirOut != "" {
 		conf.Setup.OutputDir = *optDirOut
+	}
+	if *optRange != "" {
+		conf.Setup.Range = dataRange(*optRange)
 	}
 
 	conf.symbols = []string{}
