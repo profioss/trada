@@ -12,6 +12,8 @@
 #   for example "NASDAQ-100" is page accessible at:
 #   https://en.wikipedia.org/wiki/NASDAQ-100
 # Section - place where table with index componets is located on Wiki page.
+#   See "Contents" box and just count desired section in order
+#   both section, subsection is counted as 1.
 # MinCnt - for simple check of parsed components
 #   the check passes if number of components > MinCnt
 
@@ -19,7 +21,7 @@
   Name = "DJIA"
   PageName = "Dow_Jones_Industrial_Average"
   OutputFile = "DJIA-components.csv"
-  Section = 1
+  Section = 5
   MinCnt = 25
 
 [[Resources]]
