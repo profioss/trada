@@ -1,6 +1,13 @@
 
 Get market data from IEX exchange.
 
+Previous Day
+  GET /stock/{symbol}/previous
+  https://cloud.iexapis.com/v1/stock/AAPL/previous?token=xxx
+
+Historical Prices
+  GET /stock/{symbol}/chart/{range}/{date}
+
 Docs
   https://iextrading.com/developer
   https://iextrading.com/developer/docs/#chart

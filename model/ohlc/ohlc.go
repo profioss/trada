@@ -1,6 +1,8 @@
 package ohlc
 
 import (
+	"sort"
+
 	"github.com/profioss/trada/pkg/typedef"
 )
 
@@ -53,19 +55,25 @@ func (v *Vec) Validate() error {
 
 // NewVec creates Vec.
 func NewVec(lst []OHLC) (Vec, error) {
-	data := make(map[typedef.Date]OHLC, len(lst))
-	dates := make([]typedef.Date, 0, len(lst))
 	v := Vec{}
 
 	// unique data
+	data := make(map[typedef.Date]OHLC, len(lst))
 	for _, ohlc := range lst {
 		data[ohlc.Date] = ohlc
 	}
+	v.data = data
 
 	// sorted unique date list
+	dates := make([]typedef.Date, 0, len(lst))
 	for d := range data {
 		dates = append(dates, d)
 	}
+	sort.Slice(dates,
+		func(i, j int) bool {
+			return dates[i].Time().Unix() < dates[j].Time().Unix()
+		})
+	v.dates = dates
 
 	return v, v.Validate()
 }
