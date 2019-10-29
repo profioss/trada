@@ -1,0 +1,9 @@
+
+* data ranges compatible with get-md-iex
+  - 1m, 3m, etc.
+  - 1d - incremental data fetch
+
+* OHLC volume is uint64 for crypto we need float64
+  market.go
+  ohlc.OHLC
+

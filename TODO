@@ -1,0 +1,5 @@
+
+* OHLC volume is uint64 for crypto we need float64
+  market.go
+  ohlc.OHLC
+

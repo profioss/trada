@@ -1,0 +1,8 @@
+
+  Get cryptocurrency market data from Cryptowatch
+    https://cryptowat.ch/docs/api
+
+  NOTE
+    For less trivial usage you probably want to use original Cryptowatch SDK:
+      https://github.com/cryptowatch/cw-sdk-go
+
