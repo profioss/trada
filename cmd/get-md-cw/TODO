@@ -1,6 +1,7 @@
 
+* ! dates shifted to the future - see CSV output !
+
 * data ranges compatible with get-md-iex
-  - 1m, 3m, etc.
   - 1d - incremental data fetch
 
 * OHLC volume is uint64 for crypto we need float64

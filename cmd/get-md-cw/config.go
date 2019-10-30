@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,7 +14,14 @@ import (
 
 type dataRange string
 
-var validRange = []dataRange{"5y", "2y", "1y", "ytd", "6m", "3m", "1m", "1d"}
+// NOTE max is upto 15 years
+var validRange = []dataRange{"max", "5y", "2y", "1y", "ytd", "6m", "3m", "1m", "1d"}
+
+func newDataRange(r string) dataRange {
+	input := strings.TrimSpace(r)
+	input = strings.ToLower(input)
+	return dataRange(input)
+}
 
 func (dr dataRange) validate() error {
 	var empty dataRange
@@ -34,6 +42,44 @@ func (dr dataRange) validate() error {
 
 	return fmt.Errorf("Range %q is not valid; use one of: %s",
 		dr, strings.Join(hint, ", "))
+}
+
+// since converts dataRange to corresponding time.
+func (dr dataRange) since() (time.Time, error) {
+	output := time.Now().UTC().Truncate(time.Hour * 24)
+
+	if dr.validate() != nil {
+		return output, dr.validate()
+	}
+
+	drs := string(dr)
+	switch drs {
+	case "max":
+		// beginning of the year and 15 years ago
+		output = time.Date(output.Year(), 1, 1, 0, 0, 0, 0, time.UTC).AddDate(-15, 0, 0)
+		return output, nil
+	case "ytd":
+		output = time.Date(output.Year(), 1, 1, 0, 0, 0, 0, time.UTC)
+		return output, nil
+	}
+
+	tunit := string(drs[1])
+	n, err := strconv.ParseInt(string(drs[0]), 10, 64)
+	if err != nil {
+		return output, fmt.Errorf("unable to parse %q as integer: %v", drs[0], err)
+	}
+	num := int(n)
+
+	switch tunit {
+	case "y":
+		output = output.AddDate(-num, 0, 0)
+	case "m":
+		output = output.AddDate(0, -num, 0)
+	case "d":
+		output = output.AddDate(0, 0, -num)
+	}
+
+	return output, nil
 }
 
 func rangeLstStr(rr []dataRange) string {
@@ -72,6 +118,7 @@ func (c Config) Validate() error {
 type Setup struct {
 	Range      dataRange
 	BaseURL    string
+	Exchange   string
 	Token      string
 	Timeout    time.Duration
 	MaxProcs   int
@@ -86,6 +133,9 @@ func (s Setup) Validate() error {
 	switch {
 	case s.BaseURL == "":
 		return errors.New("Setup: BaseURL is not specified")
+
+	case s.Exchange == "":
+		return errors.New("Setup: Exchange is not specified; see: https://cryptowat.ch/exchanges")
 
 	case s.OutputDir == "":
 		return errors.New("Setup: Output Directory is not specified")
@@ -136,7 +186,7 @@ func initConfig() (Config, error) {
 		conf.Setup.OutputDir = *optDirOut
 	}
 	if *optRange != "" {
-		conf.Setup.Range = dataRange(*optRange)
+		conf.Setup.Range = newDataRange(*optRange)
 	}
 
 	conf.symbols = []string{}

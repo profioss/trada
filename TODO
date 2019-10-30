@@ -1,5 +1,14 @@
 
+* get market data - support max range (at IEX - up to 15 years)
+  get-md-iex
+  get-md-cw
+  standalone typedef.DateRange
+
+* TOML configs - camel case
+
 * OHLC volume is uint64 for crypto we need float64
   market.go
   ohlc.OHLC
+
+* propper logging
 

@@ -185,19 +185,18 @@ func fetch(ticker string, app App) ([]byte, error) {
 // mkURL generates proper URL
 // see https://cryptowat.ch/docs/api#market-ohlc
 func mkURL(conf Config, ticker string) (url.URL, error) {
-	str := fmt.Sprintf("%s/%s/ohlc",
-		conf.Setup.BaseURL, ticker)
+	str := fmt.Sprintf("%s/markets/%s/%s/ohlc",
+		conf.Setup.BaseURL, conf.Setup.Exchange, ticker)
 
 	u, err := url.Parse(str)
 	if err != nil {
-		return url.URL{}, err
+		return url.URL{}, fmt.Errorf("invalid URL string: %v", err)
 	}
 
-	// TODO - proper range from config used in AddDate
-	// after := time.Now().UTC().Truncate(time.Hour*24).AddDate(0, -3, 0)
-	// after := time.Now().UTC().Truncate(time.Hour*24).AddDate(0, -1, 0)
-	after := time.Now().UTC().Truncate(time.Hour*24).AddDate(0, 0, -3)
-	fmt.Println("~~~DEBUG~~~ time after: ", after)
+	after, err := conf.Setup.Range.since()
+	if err != nil {
+		return url.URL{}, fmt.Errorf("range %q error: %v", conf.Setup.Range, err)
+	}
 
 	q := u.Query()
 	q.Set("after", fmt.Sprintf("%d", after.Unix()))

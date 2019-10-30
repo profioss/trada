@@ -5,9 +5,10 @@
   # https://cryptowat.ch/docs/api
   # see your API data limit
   Range = "3m" # 1d
-  # choose market/exchange (coinbase-pro is used here)
+  BaseURL = "https://api.cryptowat.ch"
+  # choose market/exchange
   # https://cryptowat.ch/exchanges
-  BaseURL = "https://api.cryptowat.ch/markets/coinbase-pro"
+  Exchange = "coinbase-pro"
   Token = "" # token is not needed to use public API
   MaxProcs = 2
   Timeout = 30 # request timeout in seconds
