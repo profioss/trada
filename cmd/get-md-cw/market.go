@@ -74,7 +74,12 @@ func ohlcFromCWbar(data []json.Number) (ohlc.OHLC, error) {
 	if err != nil {
 		return output, fmt.Errorf("invalid timestamp %q; data: %v", data[0].String(), data)
 	}
-	output.Date = typedef.Date(time.Unix(ts, 0).UTC())
+	// CW's UNIX timestamp means end of given bar.
+	// As for daily bars it is bit tricky
+	// e.g. 2019-10-29 daily bar has end at 2019-10-30 00:00:00 eg NEXT DAY!
+	// In this case we want 2019-10-29 bar with date 2019-10-29 :)
+	// that's why we need to go back 1 day.
+	output.Date = typedef.Date(time.Unix(ts, 0).UTC().AddDate(0, 0, -1))
 
 	o, err := data[1].Float64()
 	if err != nil {
@@ -182,7 +187,7 @@ func fetch(ticker string, app App) ([]byte, error) {
 	return body, nil
 }
 
-// mkURL generates proper URL
+// mkURL generates proper API URL
 // see https://cryptowat.ch/docs/api#market-ohlc
 func mkURL(conf Config, ticker string) (url.URL, error) {
 	str := fmt.Sprintf("%s/markets/%s/%s/ohlc",
@@ -197,10 +202,13 @@ func mkURL(conf Config, ticker string) (url.URL, error) {
 	if err != nil {
 		return url.URL{}, fmt.Errorf("range %q error: %v", conf.Setup.Range, err)
 	}
+	before := time.Now().UTC().Truncate(time.Hour * 24) // today at 00:00:00
 
 	q := u.Query()
 	q.Set("after", fmt.Sprintf("%d", after.Unix()))
+	q.Set("before", fmt.Sprintf("%d", before.Unix()))
 	q.Set("periods", "86400") // 1 day aka daily timeframe
+
 	u.RawQuery = q.Encode()
 
 	return *u, nil

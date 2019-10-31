@@ -1,8 +1,5 @@
 
-* ! dates shifted to the future - see CSV output !
-
-* data ranges compatible with get-md-iex
-  - 1d - incremental data fetch
+* check alowance aka rate limit
 
 * OHLC volume is uint64 for crypto we need float64
   market.go
