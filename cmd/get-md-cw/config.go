@@ -151,11 +151,11 @@ func (s Setup) Validate() error {
 }
 
 func initConfig() (Config, error) {
-	optConf := flag.String("c", "config/get-md-iex.toml", "config file")
+	optConf := flag.String("c", "config/get-md-cw.toml", "config file")
 	optLogLevel := flag.String("log-level", "", "log levels: disabled | error | warning | info | debug")
 	optDirOut := flag.String("o", "", "output data directory")
 	optRange := flag.String("r", "", "data range, use one of: "+rangeLstStr(validRange))
-	optSymbols := flag.String("s", "", "symbols delimited by comma (ex: SPY,QQQ,DIA)")
+	optSymbols := flag.String("s", "", "symbols delimited by comma (ex: BTCUSD,ETHEUR,XRPUSD)")
 	optTimeout := flag.Uint("t", 0, "request timeout in seconds")
 	// optTstData := flag.Bool("update-test-data", false, "update test data - use with -o testdata")
 	optVerb := flag.Bool("v", false, "verbose mode")
