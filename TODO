@@ -4,11 +4,13 @@
   get-md-cw
   standalone typedef.DateRange
 
-* TOML configs - camel case
+* OHLC prices rounded to 2 decimal places - not usable for crypto
 
 * OHLC volume is uint64 for crypto we need float64
   market.go
   ohlc.OHLC
+
+* TOML configs - camel case
 
 * propper logging
 
