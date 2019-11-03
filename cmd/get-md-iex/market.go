@@ -23,7 +23,7 @@ func getData(ctx context.Context, app App) error {
 	var err error
 	tickers := app.Config.symbols // specified by command line param
 	if len(tickers) == 0 {        // no symbol specified by command line param
-		tickers, err = loadTickers(app)
+		tickers, err = loadTickers(app) // load from watchlist(s)
 		if err != nil {
 			return fmt.Errorf("loadTickers failed %s", err)
 		}
@@ -50,49 +50,52 @@ func getData(ctx context.Context, app App) error {
 		} else {
 			err = json.Unmarshal(data, &dataOHLC)
 		}
+		// store problematic data to .../dir/fname.json.swp for analysis
+		fnameFetch := fname + ".json.swp"
 		if err != nil {
-			// store problematic data to .../dir/fname.json.swp for analysis
-			fname += ".json.swp"
-			app.log.Errorf("%s: unmarshal error: %s; check %s", t, err, fname)
-			osutil.WriteFile(fname, data)
+			app.log.Errorf("%s: unmarshal error: %s; check %s", t, err, fnameFetch)
+			osutil.WriteFile(fnameFetch, data)
 			continue
 		}
-		dataCSV := ohlcio.ToCSV(dataOHLC)
+		// clean up after possible previous errors
+		os.Remove(fnameFetch)
 
 		fname += ".csv"
+		dataCSV := ohlcio.ToCSV(dataOHLC)
 		err = saveData(fname, dataCSV)
 		if err != nil {
 			app.log.Errorf("%s: saveData error: %s", t, err)
 		}
-		app.log.Debugf("%s: saved to %s", t, fname)
+		app.log.Infof("%s: saved to %s", t, fname)
 	}
 
 	return nil
 }
 
 func fetch(ticker string, app App) ([]byte, error) {
-	body := []byte{}
+	output := []byte{}
+
 	url, err := mkURL(app.Config, ticker)
 	if err != nil {
-		return nil, fmt.Errorf("mkUrl failed: %v", err)
+		return output, fmt.Errorf("mkUrl failed: %v", err)
 	}
 
 	resp, err := app.client.Get(url.String())
 	if err != nil {
-		return body, err
+		return output, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return body, fmt.Errorf("fetch: HTTP Status: %s. URL: %s", resp.Status, url.String())
+		return output, fmt.Errorf("fetch: HTTP Status: %s. URL: %s", resp.Status, url.String())
 	}
 
-	body, err = ioutil.ReadAll(resp.Body)
+	output, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return body, fmt.Errorf("fetch: Read Error: %s", err)
+		return output, fmt.Errorf("fetch: Read Error: %s", err)
 	}
 
-	return body, nil
+	return output, nil
 }
 
 func mkURL(conf Config, ticker string) (url.URL, error) {
@@ -162,14 +165,15 @@ func mergeData(fpath string, dataNew [][]string) ([][]string, error) {
 		data[record[0]] = record
 	}
 
-	toSort := [][]string{}
+	sorted := make([][]string, 0, len(data))
 	for _, record := range data {
-		toSort = append(toSort, record)
+		sorted = append(sorted, record)
 	}
-	sort.Slice(toSort,
-		func(i, j int) bool { return toSort[i][0] < toSort[j][0] })
+	// sort by date string
+	sort.Slice(sorted,
+		func(i, j int) bool { return sorted[i][0] < sorted[j][0] })
 
-	output = append(output, toSort...)
+	output = append(output, sorted...)
 	return output, nil
 }
 
@@ -208,7 +212,7 @@ func writeData(fpath string, data [][]string) error {
 func loadTickers(app App) ([]string, error) {
 	// use a map for an easy unique ticker collection
 	tmap := make(map[string]string)
-	var tickers []string
+	tickers := []string{}
 
 	for _, path := range app.Config.Setup.Watchlists {
 		fd, err := os.Open(path)
@@ -224,10 +228,7 @@ func loadTickers(app App) ([]string, error) {
 			return tickers, fmt.Errorf("csv read %s error: %s", path, err)
 		}
 
-		for i, row := range data {
-			if i == 0 {
-				continue // skip header
-			}
+		for _, row := range data[1:] { // skip header
 			ticker := strings.TrimSpace(row[0])
 			name := strings.TrimSpace(row[1])
 
