@@ -10,6 +10,10 @@
   market.go
   ohlc.OHLC
 
+* OHLC Vec - detect data gaps - (>4)
+
+* OHLC - support various timeframe (designed for 1d)
+
 * TOML configs - camel case
 
 * propper logging

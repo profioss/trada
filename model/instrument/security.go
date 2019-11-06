@@ -1,4 +1,6 @@
-package typedef
+package instrument
+
+import "fmt"
 
 // Security is a tradable financial asset
 // https://en.wikipedia.org/wiki/Security_(finance)
@@ -26,6 +28,21 @@ const (
 	// Option - options contracts.
 	// Option
 )
+
+// Validate checks if Security is valid.
+func (s Security) Validate() error {
+	switch s {
+	case Invalid:
+		return fmt.Errorf("Security not set")
+	case Equity: // valid
+	case Forex: // valid
+	case Crypto: // valid
+	default:
+		return fmt.Errorf("invalid Security: %d", s)
+	}
+
+	return nil
+}
 
 // SecurityDecimalPlaces returns decimal places of given security.
 // For example equities are quoted in cents (2 decimal places),

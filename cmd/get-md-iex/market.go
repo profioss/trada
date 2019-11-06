@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/profioss/trada/model/instrument"
 	"github.com/profioss/trada/model/ohlc"
 	"github.com/profioss/trada/model/ohlc/ohlcio"
 	"github.com/profioss/trada/pkg/osutil"
@@ -61,7 +62,8 @@ func getData(ctx context.Context, app App) error {
 		os.Remove(fnameFetch)
 
 		fname += ".csv"
-		dataCSV := ohlcio.ToCSV(dataOHLC)
+		// TODO - use instrument
+		dataCSV := ohlcio.ToCSV(dataOHLC, instrument.Equity)
 		err = saveData(fname, dataCSV)
 		if err != nil {
 			app.log.Errorf("%s: saveData error: %s", t, err)

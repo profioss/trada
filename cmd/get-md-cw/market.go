@@ -15,10 +15,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/profioss/trada/model/instrument"
 	"github.com/profioss/trada/model/ohlc"
 	"github.com/profioss/trada/model/ohlc/ohlcio"
 	"github.com/profioss/trada/pkg/osutil"
 	"github.com/profioss/trada/pkg/typedef"
+	"github.com/shopspring/decimal"
 )
 
 // respCW is Cryptowatch representation of OHLC data.
@@ -81,25 +83,25 @@ func ohlcFromCWbar(data []json.Number) (ohlc.OHLC, error) {
 	// that's why we need to go back 1 day.
 	output.Date = typedef.Date(time.Unix(ts, 0).UTC().AddDate(0, 0, -1))
 
-	o, err := data[1].Float64()
+	o, err := decimal.NewFromString(data[1].String())
 	if err != nil {
 		return output, fmt.Errorf("invalid open %q; data: %v", data[1].String(), data)
 	}
 	output.Open = o
 
-	h, err := data[2].Float64()
+	h, err := decimal.NewFromString(data[2].String())
 	if err != nil {
 		return output, fmt.Errorf("invalid high %q; data: %v", data[2].String(), data)
 	}
 	output.High = h
 
-	l, err := data[3].Float64()
+	l, err := decimal.NewFromString(data[3].String())
 	if err != nil {
 		return output, fmt.Errorf("invalid low %q; data: %v", data[3].String(), data)
 	}
 	output.Low = l
 
-	c, err := data[4].Float64()
+	c, err := decimal.NewFromString(data[4].String())
 	if err != nil {
 		return output, fmt.Errorf("invalid close %q; data: %v", data[4].String(), data)
 	}
@@ -107,12 +109,11 @@ func ohlcFromCWbar(data []json.Number) (ohlc.OHLC, error) {
 
 	// we want VolumeBase (index 5) not VolumeQuote (index 6)
 	// see type Interval: https://github.com/cryptowatch/cw-sdk-go/blob/master/common/markets.go
-	v, err := data[5].Float64()
+	v, err := decimal.NewFromString(data[5].String())
 	if err != nil {
 		return output, fmt.Errorf("invalid volume %q; data: %v", data[5].String(), data)
 	}
-	// TODO uint64 is not suitable for crypto
-	output.Volume = uint64(v)
+	output.Volume = v
 
 	return output, nil
 }
@@ -151,7 +152,7 @@ func getData(ctx context.Context, app App) error {
 		app.log.Debugf("%s: parse - OK", t)
 
 		fname += ".csv"
-		dataCSV := ohlcio.ToCSV(dataOHLC)
+		dataCSV := ohlcio.ToCSV(dataOHLC, instrument.Crypto)
 		err = saveData(fname, dataCSV)
 		if err != nil {
 			app.log.Errorf("%s: saveData error: %s", t, err)

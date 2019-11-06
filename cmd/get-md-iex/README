@@ -3,14 +3,15 @@ Get market data from IEX exchange.
 
 Previous Day
   GET /stock/{symbol}/previous
-  https://cloud.iexapis.com/v1/stock/AAPL/previous?token=xxx
+  https://cloud.iexapis.com/v1/stock/SPY/previous?token=xxx
 
 Historical Prices
+  https://iexcloud.io/docs/api/#historical-prices
   GET /stock/{symbol}/chart/{range}/{date}
+  https://cloud.iexapis.com/v1/stock/SPY/chart/1m?token=xxx
 
 Docs
   https://iextrading.com/developer
-  https://iextrading.com/developer/docs/#chart
   https://iextrading.com/developer/docs/#stocks
 
 List of instruments

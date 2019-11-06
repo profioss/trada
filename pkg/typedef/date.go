@@ -36,7 +36,6 @@ func (d Date) Time() time.Time {
 func (d *Date) UnmarshalJSON(b []byte) (err error) {
 	if b[0] == '"' && b[len(b)-1] == '"' {
 		b = b[1 : len(b)-1]
-
 	}
 	*d, err = DateFromStr(string(b))
 	return
