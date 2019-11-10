@@ -1,6 +1,9 @@
 package instrument
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // Security is a tradable financial asset
 // https://en.wikipedia.org/wiki/Security_(finance)
@@ -29,34 +32,39 @@ const (
 	// Option
 )
 
+// see SecurityDecimalPlaces function.
+var secDecimalPlacesMap = map[Security]int{
+	Equity: 2,
+	Forex:  4,
+	Crypto: 8,
+}
+
+var secStrMap = map[Security]string{
+	Invalid: "invalid",
+	Equity:  "equity",
+	Forex:   "forex",
+	Crypto:  "crypto",
+}
+
 // Validate checks if Security is valid.
 func (s Security) Validate() error {
-	switch s {
-	case Invalid:
-		return fmt.Errorf("Security not set")
-	case Equity: // valid
-	case Forex: // valid
-	case Crypto: // valid
-	default:
-		return fmt.Errorf("invalid Security: %d", s)
+	for sec := range secStrMap {
+		if sec == s {
+			if sec == Invalid {
+				return fmt.Errorf("Security not set")
+			}
+			return nil
+		}
 	}
 
-	return nil
+	return fmt.Errorf("unknown Security: %d", s)
 }
 
 func (s Security) String() string {
-	str := ""
-	switch s {
-	case Invalid:
-		str = "invalid"
-	case Equity:
-		str = "equity"
-	case Forex:
-		str = "forex"
-	case Crypto:
-		str = "crypto"
+	str, ok := secStrMap[s]
+	if !ok {
+		return ""
 	}
-
 	return str
 }
 
@@ -64,14 +72,22 @@ func (s Security) String() string {
 // For example equities are quoted in cents (2 decimal places),
 // cryptocurrencies are quoted in satoshis (8 decimal places).
 func SecurityDecimalPlaces(s Security) int {
-	switch s {
-	case Equity:
-		return 2
-	case Forex:
-		return 4
-	case Crypto:
-		return 8
-	default:
+	d, ok := secDecimalPlacesMap[s]
+	if !ok {
 		return 0
 	}
+	return d
+}
+
+// SecurityFromString parses input string and returns Security.
+func SecurityFromString(s string) (Security, error) {
+	sx := strings.ToLower(strings.TrimSpace(s))
+
+	for sec, str := range secStrMap {
+		if str == sx {
+			return sec, sec.Validate()
+		}
+	}
+
+	return Invalid, fmt.Errorf("invalid security string: %q", s)
 }

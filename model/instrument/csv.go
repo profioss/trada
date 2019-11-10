@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"strings"
 )
 
 // SpecLstToCSV exports []Spec to CSV.
@@ -31,6 +32,26 @@ func SpecLstToCSV(w io.Writer, ss []Spec) error {
 // SpecLstToCSV function.
 func SpecLstFromCSV(r io.Reader) ([]Spec, error) {
 	output := []Spec{}
+
+	rcsv := csv.NewReader(r)
+	rcsv.Comma = ';'
+	data, err := rcsv.ReadAll()
+	if err != nil {
+		return output, fmt.Errorf("CSV read error: %v", err)
+	}
+
+	for _, row := range data[1:] { // skip header
+		spec := Spec{
+			Symbol:      strings.TrimSpace(row[0]),
+			Description: strings.TrimSpace(row[1]),
+		}
+
+		sec, err := SecurityFromString(row[2])
+		if err != nil {
+			return output, err
+		}
+		spec.SecurityType = sec
+	}
 
 	return output, nil
 }
