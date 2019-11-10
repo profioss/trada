@@ -1,4 +1,7 @@
 
+* get-md-iex - using non existent equity symbol just returns empty data with http 200
+  - if data is empty check symbol
+
 * get market data - support max range (at IEX - up to 15 years)
   get-md-iex
   get-md-cw

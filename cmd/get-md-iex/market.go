@@ -12,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	"github.com/profioss/trada/model/instrument"
 	"github.com/profioss/trada/model/ohlc"
@@ -22,26 +21,26 @@ import (
 
 func getData(ctx context.Context, app App) error {
 	var err error
-	tickers := app.Config.symbols // specified by command line param
-	if len(tickers) == 0 {        // no symbol specified by command line param
-		tickers, err = loadTickers(app) // load from watchlist(s)
+	instruments := app.Config.instrSpecs // specified by command line param
+	if len(instruments) == 0 {           // no symbol specified by command line param
+		instruments, err = loadInstruments(app) // load from watchlist(s)
 		if err != nil {
 			return fmt.Errorf("loadTickers failed %s", err)
 		}
 	}
-	if len(tickers) < app.Config.Setup.MaxProcs && len(tickers) > 0 {
-		app.Config.Setup.MaxProcs = len(tickers)
+	if len(instruments) < app.Config.Setup.MaxProcs && len(instruments) > 0 {
+		app.Config.Setup.MaxProcs = len(instruments)
 	}
 
-	for _, t := range tickers {
-		data, err := fetch(t, app)
+	for _, spec := range instruments {
+		data, err := fetch(spec, app)
 		if err != nil {
-			app.log.Errorf("%s: fetch error: %s", t, err)
+			app.log.Errorf("%s: fetch error: %s", spec.Symbol, err)
 			continue
 		}
-		app.log.Debugf("%s: fetch - OK", t)
+		app.log.Debugf("%s: fetch - OK", spec.Symbol)
 
-		fname := filepath.Join(app.Config.Setup.OutputDir, t)
+		fname := filepath.Join(app.Config.Setup.OutputDir, spec.Symbol)
 
 		dataOHLC := []ohlc.OHLC{}
 		if app.Config.Setup.Range == "1d" {
@@ -54,7 +53,8 @@ func getData(ctx context.Context, app App) error {
 		// store problematic data to .../dir/fname.json.swp for analysis
 		fnameFetch := fname + ".json.swp"
 		if err != nil {
-			app.log.Errorf("%s: unmarshal error: %s; check %s", t, err, fnameFetch)
+			app.log.Errorf("%s: unmarshal error: %s; check %s",
+				spec.Symbol, err, fnameFetch)
 			osutil.WriteFile(fnameFetch, data)
 			continue
 		}
@@ -66,18 +66,18 @@ func getData(ctx context.Context, app App) error {
 		dataCSV := ohlcio.ToCSV(dataOHLC, instrument.Equity)
 		err = saveData(fname, dataCSV)
 		if err != nil {
-			app.log.Errorf("%s: saveData error: %s", t, err)
+			app.log.Errorf("%s: saveData error: %s", spec.Symbol, err)
 		}
-		app.log.Infof("%s: saved to %s", t, fname)
+		app.log.Infof("%s: saved to %s", spec.Symbol, fname)
 	}
 
 	return nil
 }
 
-func fetch(ticker string, app App) ([]byte, error) {
+func fetch(ticker instrument.Spec, app App) ([]byte, error) {
 	output := []byte{}
 
-	url, err := mkURL(app.Config, ticker)
+	url, err := mkURL(app.Config, ticker.Symbol)
 	if err != nil {
 		return output, fmt.Errorf("mkUrl failed: %v", err)
 	}
@@ -211,38 +211,28 @@ func writeData(fpath string, data [][]string) error {
 	return nil
 }
 
-func loadTickers(app App) ([]string, error) {
-	// use a map for an easy unique ticker collection
-	tmap := make(map[string]string)
-	tickers := []string{}
+func loadInstruments(app App) ([]instrument.Spec, error) {
+	output := []instrument.Spec{}
+	// tmap is unique (key: symbol + security type) instrument collection
+	imap := make(map[string]instrument.Spec)
 
 	for _, path := range app.Config.Setup.Watchlists {
 		fd, err := os.Open(path)
 		if err != nil {
-			return tickers, fmt.Errorf("open %s error: %s", path, err)
+			return output, fmt.Errorf("open %s error: %s", path, err)
 		}
 		defer fd.Close()
 
-		r := csv.NewReader(fd)
-		r.Comma = ';'
-		data, err := r.ReadAll()
-		if err != nil {
-			return tickers, fmt.Errorf("csv read %s error: %s", path, err)
+		specLst, err := instrument.SpecLstFromCSV(fd)
+		for _, s := range specLst {
+			imap[s.Symbol+s.SecurityType.String()] = s
 		}
-
-		for _, row := range data[1:] { // skip header
-			ticker := strings.TrimSpace(row[0])
-			name := strings.TrimSpace(row[1])
-
-			tmap[ticker] = name
-		}
-
 		app.log.Infof("loadTickers: %s - OK", path)
 	}
 
-	for ticker := range tmap {
-		tickers = append(tickers, ticker)
+	for _, spec := range imap {
+		output = append(output, spec)
 	}
 
-	return tickers, nil
+	return output, nil
 }

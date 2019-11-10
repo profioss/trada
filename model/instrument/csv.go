@@ -40,7 +40,7 @@ func SpecLstFromCSV(r io.Reader) ([]Spec, error) {
 		return output, fmt.Errorf("CSV read error: %v", err)
 	}
 
-	for _, row := range data[1:] { // skip header
+	for _, row := range data[1:] { // skip CSV header
 		spec := Spec{
 			Symbol:      strings.TrimSpace(row[0]),
 			Description: strings.TrimSpace(row[1]),
@@ -51,6 +51,8 @@ func SpecLstFromCSV(r io.Reader) ([]Spec, error) {
 			return output, err
 		}
 		spec.SecurityType = sec
+
+		output = append(output, spec)
 	}
 
 	return output, nil

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	toml "github.com/pelletier/go-toml"
+	"github.com/profioss/trada/model/instrument"
 )
 
 type dataRange string
@@ -51,8 +52,8 @@ type Config struct {
 
 	// cmd line flag, not part of the config file
 	// updateTstData bool
-	symbols []string
-	verbose bool
+	instrSpecs []instrument.Spec
+	verbose    bool
 }
 
 // Validate checks if Config is valid.
@@ -105,7 +106,7 @@ func initConfig() (Config, error) {
 	optLogLevel := flag.String("log-level", "", "log levels: disabled | error | warning | info | debug")
 	optDirOut := flag.String("o", "", "output data directory")
 	optRange := flag.String("r", "", "data range, use one of: "+rangeLstStr(validRange))
-	optSymbols := flag.String("s", "", "symbols delimited by comma (ex: SPY,QQQ,DIA)")
+	optSymbols := flag.String("s", "", "symbols delimited by comma (ex: SPY,QQQ,DIA:equity) with possible security type")
 	optTimeout := flag.Uint("t", 0, "request timeout in seconds")
 	// optTstData := flag.Bool("update-test-data", false, "update test data - use with -o testdata")
 	optVerb := flag.Bool("v", false, "verbose mode")
@@ -139,9 +140,13 @@ func initConfig() (Config, error) {
 		conf.Setup.Range = dataRange(*optRange)
 	}
 
-	conf.symbols = []string{}
+	conf.instrSpecs = []instrument.Spec{}
 	if *optSymbols != "" {
-		conf.symbols = strings.Split(*optSymbols, ",")
+		specLst, err := parseSymbols(*optSymbols)
+		if err != nil {
+			return conf, fmt.Errorf("parsing symbols %q failed: %v", *optSymbols, err)
+		}
+		conf.instrSpecs = specLst
 	}
 
 	// default log level
@@ -158,4 +163,38 @@ func initConfig() (Config, error) {
 	}
 
 	return conf, conf.Validate()
+}
+
+// parseSymbols parses string from command line arg
+// arg can be simple symbol list like: SPY,DIA
+// or with specified security type: SPY:equity,DIA:equity
+// arg can be mix of these two definitions.
+// if no security type is specified equity is used.
+func parseSymbols(str string) ([]instrument.Spec, error) {
+	output := []instrument.Spec{}
+	symLst := strings.Split(str, ",")
+
+	for _, s := range symLst {
+		spec := instrument.Spec{
+			Symbol:       s,
+			SecurityType: instrument.Equity, // default
+		}
+
+		if strings.ContainsRune(s, ':') {
+			symSec := strings.Split(s, ":")
+			spec.Symbol = symSec[0]
+			sec, err := instrument.SecurityFromString(symSec[1])
+			if err != nil {
+				return output, fmt.Errorf("symbol %q of invalid security type %q", symSec[0], symSec[1])
+			}
+			spec.SecurityType = sec
+		}
+
+		if spec.Validate() != nil {
+			return output, fmt.Errorf("invalid symbol %q: %v", s, spec.Validate())
+		}
+		output = append(output, spec)
+	}
+
+	return output, nil
 }
