@@ -5,10 +5,11 @@ import (
 	"io"
 	"strings"
 
+	"github.com/profioss/trada/model/instrument"
 	"golang.org/x/net/html"
 )
 
-func parseDJIA(r io.Reader) (output [][]string, err error) {
+func parseDJIA(r io.Reader) (output []instrument.Spec, err error) {
 	// HTML DOM walking can enter unexpected branch which could cause panic
 	// e.g. accessing x.FirstChild.NextSibling where FirstChild is nil
 	// report panic(s) as error to simplify error handling
@@ -53,11 +54,13 @@ func parseDJIA(r io.Reader) (output [][]string, err error) {
 	f(doc)
 
 	for _, r := range rows {
-		company := strings.TrimSpace(r[0])
-		// exchange := r[1]
-		ticker := r[2]
-		row := []string{ticker, company}
-		output = append(output, row)
+		iSpec := instrument.Spec{
+			Symbol:       strings.TrimSpace(r[2]),
+			Description:  strings.TrimSpace(r[0]),
+			SecurityType: instrument.Equity,
+			Exchange:     strings.TrimSpace(r[1]),
+		}
+		output = append(output, iSpec)
 	}
 
 	return output, nil

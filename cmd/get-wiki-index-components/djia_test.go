@@ -48,7 +48,7 @@ func TestParseDJIA(t *testing.T) {
 	found := []string{}
 	for _, c := range components {
 		for _, r := range rows {
-			if r[0] == c.symbol && strings.Contains(r[1], c.company) {
+			if r.Symbol == c.symbol && strings.Contains(r.Description, c.company) {
 				found = append(found, c.symbol)
 				break
 			}

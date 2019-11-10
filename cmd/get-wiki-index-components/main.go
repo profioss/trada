@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/csv"
 	"fmt"
 	"io"
 	"log"
@@ -15,12 +14,14 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+
+	"github.com/profioss/trada/model/instrument"
 )
 
 const dirPerms os.FileMode = 0755
 const filePerms os.FileMode = 0644
 
-type parser = func(r io.Reader) ([][]string, error)
+type parser = func(r io.Reader) ([]instrument.Spec, error)
 
 // Mapping of DataSrc.Name in Config with content parser.
 // NOTE: this is validated - using proper names is required.
@@ -116,13 +117,8 @@ func getNparse(ctx context.Context, app App, ds DataSrc) error {
 	}
 	app.log.Debugf("%s: parseData - OK", ds.Name)
 
-	data := [][]string{
-		[]string{"sym", "name"}, // CSV output header
-	}
-	data = append(data, components...)
-
 	fnameDst := filepath.Join(app.Setup.OutputDir, ds.OutputFile)
-	err = saveData(fnameDst, data)
+	err = saveData(fnameDst, components)
 	if err != nil {
 		app.log.Errorf("%s: saveData to %s failed: %s", ds.Name, fnameDst, err)
 		return err
@@ -133,25 +129,25 @@ func getNparse(ctx context.Context, app App, ds DataSrc) error {
 	return nil
 }
 
-func parseData(app App, wd wikiData, ds DataSrc) ([][]string, error) {
+func parseData(app App, wd wikiData, ds DataSrc) ([]instrument.Spec, error) {
 	p, ok := parsers[ds.Name]
 	if !ok {
 		msg := fmt.Sprintf("No parser for %s", ds.Name)
 		app.log.Error(msg)
-		return [][]string{}, fmt.Errorf(msg)
+		return []instrument.Spec{}, fmt.Errorf(msg)
 	}
 
 	wdr := strings.NewReader(wd.Parsed.Content.Text)
 	components, err := p(wdr)
 	if err != nil {
 		app.log.Errorf("%s: parsing table failed: %s", ds.Name, err)
-		return [][]string{}, err
+		return []instrument.Spec{}, err
 	}
 
 	return components, nil
 }
 
-func saveData(fpath string, data [][]string) error {
+func saveData(fpath string, components []instrument.Spec) error {
 	dirname := filepath.Dir(fpath)
 	err := os.MkdirAll(dirname, dirPerms)
 	if err != nil {
@@ -164,11 +160,9 @@ func saveData(fpath string, data [][]string) error {
 	}
 	defer os.Remove(fdTmp.Name())
 
-	w := csv.NewWriter(fdTmp)
-	w.Comma = ';'
-	w.WriteAll(data)
-	if w.Error() != nil {
-		return fmt.Errorf("temp file error: %s", w.Error())
+	err = instrument.SpecLstToCSV(fdTmp, components)
+	if err != nil {
+		return fmt.Errorf("instrument.SpecLstToCSV: %v", err)
 	}
 
 	err = os.Chmod(fdTmp.Name(), filePerms)

@@ -9,6 +9,7 @@ type Spec struct {
 	Symbol       string
 	Description  string
 	SecurityType Security
+	Exchange     string
 }
 
 // Validate checks if Spec has valid content.

@@ -44,6 +44,22 @@ func (s Security) Validate() error {
 	return nil
 }
 
+func (s Security) String() string {
+	str := ""
+	switch s {
+	case Invalid:
+		str = "invalid"
+	case Equity:
+		str = "equity"
+	case Forex:
+		str = "forex"
+	case Crypto:
+		str = "crypto"
+	}
+
+	return str
+}
+
 // SecurityDecimalPlaces returns decimal places of given security.
 // For example equities are quoted in cents (2 decimal places),
 // cryptocurrencies are quoted in satoshis (8 decimal places).
