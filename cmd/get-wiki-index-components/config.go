@@ -13,8 +13,8 @@ import (
 
 // Config is main configuration.
 type Config struct {
-	Setup     Setup
-	Resources []DataSrc
+	Setup     Setup     `toml:"setup"`
+	Resources []DataSrc `toml:"resources"`
 
 	// cmd line flag, not part of the config file
 	updateTstData bool
@@ -42,12 +42,12 @@ func (c Config) Validate() error {
 
 // Setup defines command setup.
 type Setup struct {
-	WikiAPI   string
-	Timeout   time.Duration
-	MaxProcs  int
-	LogFile   string
-	LogLevel  string
-	OutputDir string
+	WikiAPI   string        `toml:"wiki-api"`
+	Timeout   time.Duration `toml:"timeout"`
+	MaxProcs  int           `toml:"max-procs"`
+	LogFile   string        `toml:"log-file"`
+	LogLevel  string        `toml:"log-level"`
+	OutputDir string        `toml:"output-dir"`
 }
 
 // Validate checks if Setup is valid.
@@ -68,11 +68,11 @@ func (s Setup) Validate() error {
 
 // DataSrc defines data sources.
 type DataSrc struct {
-	Name       string
-	PageName   string
-	Section    int
-	MinCnt     int
-	OutputFile string
+	Name       string `toml:"name"`
+	PageName   string `toml:"page-name"`
+	Section    int    `toml:"section"`
+	MinCnt     int    `toml:"min-cnt"`
+	OutputFile string `toml:"output-file"`
 }
 
 // Validate checks if DataSrc is valid.
