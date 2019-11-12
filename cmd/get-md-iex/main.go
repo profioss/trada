@@ -64,7 +64,7 @@ func main() {
 }
 
 func do(ctx context.Context, app App) error {
-	return getData(ctx, app)
+	return work(ctx, app)
 }
 
 func cleanup(app App) {

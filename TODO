@@ -7,17 +7,16 @@
   get-md-cw
   standalone typedef.DateRange
 
-* OHLC prices rounded to 2 decimal places - not usable for crypto
-
 * OHLC volume is uint64 for crypto we need float64
   market.go
   ohlc.OHLC
 
-* OHLC Vec - detect data gaps - (>4)
+* OHLC Vec - detect data gaps - (>4 days)
+
+* get-md-iex - proper use of context - timeout, cancellation
 
 * OHLC - support various timeframe (designed for 1d)
 
 * TOML configs - camel case
 
 * propper logging
-

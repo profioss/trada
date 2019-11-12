@@ -19,7 +19,7 @@ import (
 	"github.com/profioss/trada/pkg/osutil"
 )
 
-func getData(ctx context.Context, app App) error {
+func work(ctx context.Context, app App) error {
 	var err error
 	instruments := app.Config.instrSpecs // specified by command line param
 	if len(instruments) == 0 {           // no symbol specified by command line param
@@ -33,40 +33,10 @@ func getData(ctx context.Context, app App) error {
 	}
 
 	for _, spec := range instruments {
-		data, err := fetch(spec, app)
+		fname, err := getNstore(ctx, app, spec)
 		if err != nil {
-			app.log.Errorf("%s: fetch error: %s", spec.Symbol, err)
+			app.log.Errorf("%s: %v", spec.Symbol, err)
 			continue
-		}
-		app.log.Debugf("%s: fetch - OK", spec.Symbol)
-
-		fname := filepath.Join(app.Config.Setup.OutputDir, spec.Symbol)
-
-		dataOHLC := []ohlc.OHLC{}
-		if app.Config.Setup.Range == "1d" {
-			ohlc := ohlc.OHLC{}
-			err = json.Unmarshal(data, &ohlc)
-			dataOHLC = append(dataOHLC, ohlc)
-		} else {
-			err = json.Unmarshal(data, &dataOHLC)
-		}
-		// store problematic data to .../dir/fname.json.swp for analysis
-		fnameFetch := fname + ".json.swp"
-		if err != nil {
-			app.log.Errorf("%s: unmarshal error: %s; check %s",
-				spec.Symbol, err, fnameFetch)
-			osutil.WriteFile(fnameFetch, data)
-			continue
-		}
-		// clean up after possible previous errors
-		os.Remove(fnameFetch)
-
-		fname += ".csv"
-		// TODO - use instrument
-		dataCSV := ohlcio.ToCSV(dataOHLC, instrument.Equity)
-		err = saveData(fname, dataCSV)
-		if err != nil {
-			app.log.Errorf("%s: saveData error: %s", spec.Symbol, err)
 		}
 		app.log.Infof("%s: saved to %s", spec.Symbol, fname)
 	}
@@ -74,10 +44,48 @@ func getData(ctx context.Context, app App) error {
 	return nil
 }
 
-func fetch(ticker instrument.Spec, app App) ([]byte, error) {
+func getNstore(ctx context.Context, app App, spec instrument.Spec) (string, error) {
+	data, err := fetch(spec, app)
+	if err != nil {
+		app.log.Errorf("%s: fetch error: %s", spec.Symbol, err)
+		return "", fmt.Errorf("%s: fetch error: %s", spec.Symbol, err)
+	}
+	app.log.Debugf("%s: fetch - OK", spec.Symbol)
+
+	fname := filepath.Join(app.Config.Setup.OutputDir, spec.Symbol)
+
+	dataOHLC := []ohlc.OHLC{}
+	if app.Config.Setup.Range == "1d" {
+		ohlc := ohlc.OHLC{}
+		err = json.Unmarshal(data, &ohlc)
+		dataOHLC = append(dataOHLC, ohlc)
+	} else {
+		err = json.Unmarshal(data, &dataOHLC)
+	}
+	// store problematic data to .../dir/fname.json.swp for analysis
+	fnameFetch := fname + ".json.swp"
+	if err != nil {
+		osutil.WriteFile(fnameFetch, data)
+		return "", fmt.Errorf("%s: unmarshal error: %s; check %s",
+			spec.Symbol, err, fnameFetch)
+	}
+	// clean up after possible previous errors
+	os.Remove(fnameFetch)
+
+	fname += ".csv"
+	dataCSV := ohlcio.ToCSV(dataOHLC, spec.SecurityType)
+	err = saveData(fname, dataCSV)
+	if err != nil {
+		return fname, fmt.Errorf("%s: saveData error: %s", spec.Symbol, err)
+	}
+
+	return fname, nil
+}
+
+func fetch(spec instrument.Spec, app App) ([]byte, error) {
 	output := []byte{}
 
-	url, err := mkURL(app.Config, ticker.Symbol)
+	url, err := mkURL(app.Config, spec.Symbol)
 	if err != nil {
 		return output, fmt.Errorf("mkUrl failed: %v", err)
 	}
@@ -213,8 +221,8 @@ func writeData(fpath string, data [][]string) error {
 
 func loadInstruments(app App) ([]instrument.Spec, error) {
 	output := []instrument.Spec{}
-	// tmap is unique (key: symbol + security type) instrument collection
-	imap := make(map[string]instrument.Spec)
+	// specMap is unique (key: symbol + security type) instrument collection
+	specMap := make(map[string]instrument.Spec)
 
 	for _, path := range app.Config.Setup.Watchlists {
 		fd, err := os.Open(path)
@@ -225,12 +233,12 @@ func loadInstruments(app App) ([]instrument.Spec, error) {
 
 		specLst, err := instrument.SpecLstFromCSV(fd)
 		for _, s := range specLst {
-			imap[s.Symbol+s.SecurityType.String()] = s
+			specMap[s.Symbol+s.SecurityType.String()] = s
 		}
 		app.log.Infof("loadTickers: %s - OK", path)
 	}
 
-	for _, spec := range imap {
+	for _, spec := range specMap {
 		output = append(output, spec)
 	}
 
