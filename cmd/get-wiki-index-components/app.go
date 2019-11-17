@@ -43,7 +43,7 @@ func (a App) Validate() error {
 func newApp() (App, error) {
 	app := App{}
 
-	conf, err := initConfig()
+	conf, err := initConfig(initSettings())
 	if err != nil {
 		return app, err
 	}

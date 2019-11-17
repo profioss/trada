@@ -8,6 +8,10 @@ github.com/pelletier/go-toml v1.6.0 h1:aetoXYr0Tv7xRU/V4B4IZJ2QcbtMUFoNb3ORp7TzI
 github.com/pelletier/go-toml v1.6.0/go.mod h1:5N711Q9dKgbdkxHL+MEfF31hpT7l0S0s/t2kKREewys=
 github.com/profioss/clog v0.0.0-20180130113329-a2b20e658943 h1:2iL3dgQGV8sVpWmDVxabDxXrEaE1OSXyThKjlXHCZYM=
 github.com/profioss/clog v0.0.0-20180130113329-a2b20e658943/go.mod h1:fS9dGOcZkNDfeFr0WxhBleOrD9VosU9lNMiS3cF9xwA=
+github.com/profioss/clog v0.0.0-20191114124135-7298fd367859 h1:/bqZqu3znUcCGthmfIoof82U7HXnBkPIk8Bo96qxdBk=
+github.com/profioss/clog v0.0.0-20191114124135-7298fd367859/go.mod h1:fS9dGOcZkNDfeFr0WxhBleOrD9VosU9lNMiS3cF9xwA=
+github.com/profioss/clog v0.1.0 h1:qjND8jCY24bSJGsKp5vSBFg9WlaC2FlPmL5ZzPlOcz8=
+github.com/profioss/clog v0.1.0/go.mod h1:fS9dGOcZkNDfeFr0WxhBleOrD9VosU9lNMiS3cF9xwA=
 github.com/shopspring/decimal v0.0.0-20191009025716-f1972eb1d1f5 h1:Gojs/hac/DoYEM7WEICT45+hNWczIeuL5D21e5/HPAw=
 github.com/shopspring/decimal v0.0.0-20191009025716-f1972eb1d1f5/go.mod h1:M+9NzErvs504Cn4c5DxATwIqPbtswREoFCre64PpcG4=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=

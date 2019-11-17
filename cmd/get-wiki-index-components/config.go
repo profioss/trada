@@ -9,6 +9,7 @@ import (
 	"time"
 
 	toml "github.com/pelletier/go-toml"
+	"github.com/profioss/clog"
 )
 
 // Config is main configuration.
@@ -16,7 +17,8 @@ type Config struct {
 	Setup     Setup     `toml:"setup"`
 	Resources []DataSrc `toml:"resources"`
 
-	// cmd line flag, not part of the config file
+	// cmd line flags, not part of the config file
+	path          string
 	updateTstData bool
 	verbose       bool
 }
@@ -63,6 +65,8 @@ func (s Setup) Validate() error {
 		return errors.New("Setup: Timeout is set too low")
 	}
 
+	// LogLevel and LogFile can be empty, safe defaults are used in initConfig()
+
 	return nil
 }
 
@@ -105,38 +109,52 @@ func (ds DataSrc) Validate() error {
 	return nil
 }
 
-func initConfig() (Config, error) {
-	optConf := flag.String("c", "config/get-wiki-index-components.toml", "config file")
-	optLogLevel := flag.String("log-level", "", "log levels: disabled | error | warning | info | debug")
-	optDirOut := flag.String("o", "", "output data directory")
+func initSettings() Config {
+	cfg := Config{}
+
+	flag.StringVar(&cfg.path, "c", "config/get-wiki-index-components.toml", "config file")
+	flag.StringVar(&cfg.Setup.LogLevel, "log-level", "", "log levels: disabled | error | warning | info | debug")
+	flag.StringVar(&cfg.Setup.OutputDir, "o", "", "output data directory")
+	flag.BoolVar(&cfg.updateTstData, "update-test-data", false, "update test data - use with -o testdata")
+	flag.BoolVar(&cfg.verbose, "v", false, "verbose mode")
+
 	optTimeout := flag.Uint("t", 0, "request timeout in seconds")
-	optTstData := flag.Bool("update-test-data", false, "update test data - use with -o testdata")
-	optVerb := flag.Bool("v", false, "verbose mode")
 	flag.Parse()
 
+	if *optTimeout > 0 {
+		cfg.Setup.Timeout = time.Duration(*optTimeout) * time.Second
+	}
+
+	return cfg
+}
+
+func initConfig(settings Config) (Config, error) {
 	var conf Config
-	fd, err := os.Open(*optConf)
+
+	if settings.path == "" {
+		return conf, fmt.Errorf("empty config path")
+	}
+	fd, err := os.Open(settings.path)
 	if err != nil {
-		return conf, err
+		return conf, fmt.Errorf("config open file error: %v", err)
 	}
 	defer fd.Close()
 
 	err = toml.NewDecoder(fd).Decode(&conf)
 	if err != nil {
-		return conf, err
+		return conf, fmt.Errorf("config %s parse error: %v", settings.path, err)
 	}
 
-	conf.verbose = *optVerb
-	conf.updateTstData = *optTstData
-
+	conf.verbose = settings.verbose
+	conf.updateTstData = settings.updateTstData
 	conf.Setup.Timeout = time.Duration(conf.Setup.Timeout) * time.Second
 	//
 	// override setup from config by cmdline args
-	if *optTimeout > 0 {
-		conf.Setup.Timeout = time.Duration(*optTimeout) * time.Second
+	if settings.Setup.Timeout > 0 {
+		conf.Setup.Timeout = settings.Setup.Timeout
 	}
-	if *optDirOut != "" {
-		conf.Setup.OutputDir = *optDirOut
+	if settings.Setup.OutputDir != "" {
+		conf.Setup.OutputDir = settings.Setup.OutputDir
 	}
 
 	// default log level
@@ -144,8 +162,12 @@ func initConfig() (Config, error) {
 	if conf.Setup.LogLevel == "" {
 		conf.Setup.LogLevel = "info"
 	}
-	if *optLogLevel != "" {
-		conf.Setup.LogLevel = *optLogLevel
+	if settings.Setup.LogLevel != "" {
+		conf.Setup.LogLevel = settings.Setup.LogLevel
+	}
+	_, err = clog.LevelFromString(conf.Setup.LogLevel)
+	if err != nil {
+		return conf, fmt.Errorf("invalid log level: %v", err)
 	}
 	// disable logging if no log file was specified
 	if conf.Setup.LogFile == "" {
