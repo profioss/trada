@@ -38,6 +38,11 @@ func work(ctx context.Context, app App) error {
 	}
 
 	for _, spec := range instruments {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("operation cancelled")
+		default:
+		}
 		fname, err := getNstore(ctx, app, spec)
 		if err != nil {
 			app.log.Errorf("%s: %v", spec.Symbol, err)
@@ -50,7 +55,13 @@ func work(ctx context.Context, app App) error {
 }
 
 func getNstore(ctx context.Context, app App, spec instrument.Spec) (string, error) {
-	data, err := fetch(spec, app)
+	select {
+	case <-ctx.Done():
+		return "", fmt.Errorf("operation cancelled")
+	default:
+	}
+
+	data, err := fetch(ctx, spec, app)
 	if err != nil {
 		app.log.Errorf("%s: fetch error: %s", spec.Symbol, err)
 		return "", fmt.Errorf("%s: fetch error: %s", spec.Symbol, err)
@@ -79,7 +90,7 @@ func getNstore(ctx context.Context, app App, spec instrument.Spec) (string, erro
 
 	fname += ".csv"
 	dataCSV := ohlcio.ToCSV(dataOHLC, spec.SecurityType)
-	err = saveData(fname, dataCSV)
+	err = saveData(ctx, fname, dataCSV)
 	if err != nil {
 		return fname, fmt.Errorf("%s: saveData error: %s", spec.Symbol, err)
 	}
@@ -87,8 +98,13 @@ func getNstore(ctx context.Context, app App, spec instrument.Spec) (string, erro
 	return fname, nil
 }
 
-func fetch(spec instrument.Spec, app App) ([]byte, error) {
+func fetch(ctx context.Context, spec instrument.Spec, app App) ([]byte, error) {
 	output := []byte{}
+	select {
+	case <-ctx.Done():
+		return output, fmt.Errorf("operation cancelled")
+	default:
+	}
 
 	url, err := mkURL(app.Config, spec.Symbol)
 	if err != nil {
@@ -133,7 +149,13 @@ func mkURL(conf Config, ticker string) (url.URL, error) {
 	return *u, nil
 }
 
-func saveData(fpath string, data [][]string) error {
+func saveData(ctx context.Context, fpath string, data [][]string) error {
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("operation cancelled")
+	default:
+	}
+
 	output := data
 	err := osutil.FileExists(fpath)
 	if err == nil {
@@ -144,7 +166,7 @@ func saveData(fpath string, data [][]string) error {
 		output = dataMerged
 	}
 
-	err = writeData(fpath, output)
+	err = writeData(ctx, fpath, output)
 	if err != nil {
 		return fmt.Errorf("writeData %s failed: %v", fpath, err)
 	}
@@ -192,7 +214,13 @@ func mergeData(fpath string, dataNew [][]string) ([][]string, error) {
 	return output, nil
 }
 
-func writeData(fpath string, data [][]string) error {
+func writeData(ctx context.Context, fpath string, data [][]string) error {
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("operation cancelled")
+	default:
+	}
+
 	dirname := filepath.Dir(fpath)
 	err := os.MkdirAll(dirname, osutil.DirPerms)
 	if err != nil {
