@@ -29,7 +29,7 @@
   name = "NDX"
   page-name = "NASDAQ-100"
   output-file = "NDX-components.csv"
-  section = 9
+  section = 10
   min-cnt = 95
 
 [[resources]]
