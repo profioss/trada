@@ -22,7 +22,7 @@
   name = "DJIA"
   page-name = "Dow_Jones_Industrial_Average"
   output-file = "DJIA-components.csv"
-  section = 5
+  section = 1
   min-cnt = 25
 
 [[resources]]
