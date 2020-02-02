@@ -28,7 +28,12 @@ func work(ctx context.Context, app App) error {
 			return fmt.Errorf("loadTickers failed %s", err)
 		}
 	}
-	if len(instruments) < app.Config.Setup.MaxProcs && len(instruments) > 0 {
+
+	switch {
+	case len(instruments) == 0:
+		return fmt.Errorf("empty instrument list")
+
+	case len(instruments) < app.Config.Setup.MaxProcs && len(instruments) > 0:
 		app.Config.Setup.MaxProcs = len(instruments)
 	}
 
@@ -220,6 +225,7 @@ func writeData(fpath string, data [][]string) error {
 }
 
 func loadInstruments(app App) ([]instrument.Spec, error) {
+	funcName := "loadInstruments"
 	output := []instrument.Spec{}
 	// specMap is unique (key: symbol + security type) instrument collection
 	specMap := make(map[string]instrument.Spec)
@@ -232,15 +238,23 @@ func loadInstruments(app App) ([]instrument.Spec, error) {
 		defer fd.Close()
 
 		specLst, err := instrument.SpecLstFromCSV(fd)
+		if err != nil {
+			return output, fmt.Errorf("load from %s error: %s", path, err)
+		}
+		if len(specLst) == 0 {
+			app.log.Warnf("%s: %s is empty", funcName, path)
+		}
+
 		for _, s := range specLst {
 			specMap[s.Symbol+s.SecurityType.String()] = s
 		}
-		app.log.Infof("loadTickers: %s - OK", path)
+		app.log.Infof("%s: %s - OK", funcName, path)
 	}
 
 	for _, spec := range specMap {
 		output = append(output, spec)
 	}
+	app.log.Infof("%s: loaded %d instruments", funcName, len(output))
 
 	return output, nil
 }

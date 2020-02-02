@@ -28,7 +28,7 @@ func SpecLstToCSV(w io.Writer, ss []Spec) error {
 }
 
 // SpecLstFromCSV imports []Spec from CSV.
-// NOTE this function expect data exported by complementary
+// NOTE this function expects data exported by complementary
 // SpecLstToCSV function.
 func SpecLstFromCSV(r io.Reader) ([]Spec, error) {
 	output := []Spec{}
