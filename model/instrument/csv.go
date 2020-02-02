@@ -41,6 +41,9 @@ func SpecLstFromCSV(r io.Reader) ([]Spec, error) {
 	}
 
 	for _, row := range data[1:] { // skip CSV header
+		if len(row) < 3 {
+			return output, fmt.Errorf("expected 3 columns (sym;name;security), got %d: %#v", len(row), row)
+		}
 		spec := Spec{
 			Symbol:      strings.TrimSpace(row[0]),
 			Description: strings.TrimSpace(row[1]),
