@@ -87,7 +87,11 @@ func main() {
 func do(ctx context.Context, app App) error {
 	for _, r := range app.Resources {
 		app.log.Info("Fetching ", r.Name)
-		getNparse(ctx, app, r)
+		err := getNparse(ctx, app, r)
+		if err != nil {
+			app.log.Error(err)
+			// don't stop - get next resource
+		}
 	}
 
 	return nil
@@ -124,6 +128,10 @@ func getNparse(ctx context.Context, app App, ds DataSrc) error {
 		return err
 	}
 	app.log.Debugf("%s: saveData to %s - OK", ds.Name, fnameDst)
+
+	if len(components) < ds.MinCnt {
+		return fmt.Errorf("%s: expected at least %d components, got %d", ds.Name, ds.MinCnt, len(components))
+	}
 
 	app.log.Infof("%s: %s - OK", ds.Name, fnameDst)
 	return nil

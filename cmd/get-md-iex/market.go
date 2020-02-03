@@ -25,7 +25,7 @@ func work(ctx context.Context, app App) error {
 	if len(instruments) == 0 {           // no symbol specified by command line param
 		instruments, err = loadInstruments(app) // load from watchlist(s)
 		if err != nil {
-			return fmt.Errorf("loadTickers failed %s", err)
+			return fmt.Errorf("loadInstruments failed: %s", err)
 		}
 	}
 
