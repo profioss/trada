@@ -1,11 +1,11 @@
-package main
+package oex
 
 import (
 	"strings"
 	"testing"
 )
 
-func TestParseDJIA(t *testing.T) {
+func TestParseOEX(t *testing.T) {
 	components := []struct {
 		symbol  string
 		company string
@@ -13,6 +13,14 @@ func TestParseDJIA(t *testing.T) {
 		{
 			symbol:  "AAPL",
 			company: "Apple",
+		},
+		{
+			symbol:  "AMZN",
+			company: "Amazon",
+		},
+		{
+			symbol:  "GOOGL",
+			company: "Alphabet",
 		},
 		{
 			symbol:  "JNJ",
@@ -28,19 +36,19 @@ func TestParseDJIA(t *testing.T) {
 		},
 	}
 
-	fname := "testdata/DJIA-components.csv.json"
+	fname := "testdata/OEX-components.csv.json"
 	wd, err := parseWikiData(fname)
 	if err != nil {
 		t.Fatal(err)
 	}
 	wdr := strings.NewReader(wd.Parsed.Content.Text)
 
-	rows, err := parseDJIA(wdr)
+	rows, err := parseOEX(wdr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	minCnt := 29 // minimum number of symbols
+	minCnt := 99 // minimum number of symbols
 	if len(rows) < minCnt {
 		t.Fatalf("expected at least %d parsed symbols, got: %d", minCnt, len(rows))
 	}

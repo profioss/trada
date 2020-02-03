@@ -10,6 +10,7 @@ import (
 
 	toml "github.com/pelletier/go-toml"
 	"github.com/profioss/clog"
+	"github.com/profioss/trada/cmd/get-wiki-index-components/parser"
 )
 
 // Config is main configuration.
@@ -80,7 +81,6 @@ type DataSrc struct {
 }
 
 // Validate checks if DataSrc is valid.
-// TODO - match name with supported parsers
 func (ds DataSrc) Validate() error {
 	switch {
 	case ds.Name == "":
@@ -96,14 +96,10 @@ func (ds DataSrc) Validate() error {
 		return errors.New("DataSrc: Section is < 1")
 	}
 
-	_, ok := parsers[ds.Name]
-	if !ok {
-		names := []string{}
-		for k := range parsers {
-			names = append(names, k)
-		}
-		return fmt.Errorf("DataSrc: Name '%s' is not valid. Use one of: %s",
-			ds.Name, strings.Join(names, ", "))
+	_, err := parser.Get(ds.Name)
+	if err != nil {
+		return fmt.Errorf("DataSrc: Name '%s' is not valid. Use one of: %s or import required parser",
+			ds.Name, strings.Join(parser.List(), ", "))
 	}
 
 	return nil

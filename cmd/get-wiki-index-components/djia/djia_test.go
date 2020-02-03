@@ -1,11 +1,11 @@
-package main
+package djia
 
 import (
 	"strings"
 	"testing"
 )
 
-func TestParseNDX(t *testing.T) {
+func TestParseDJIA(t *testing.T) {
 	components := []struct {
 		symbol  string
 		company string
@@ -15,12 +15,12 @@ func TestParseNDX(t *testing.T) {
 			company: "Apple",
 		},
 		{
-			symbol:  "AMZN",
-			company: "Amazon",
+			symbol:  "JNJ",
+			company: "Johnson & Johnson",
 		},
 		{
-			symbol:  "GOOGL",
-			company: "Alphabet",
+			symbol:  "JPM",
+			company: "JPMorgan Chase",
 		},
 		{
 			symbol:  "MSFT",
@@ -28,19 +28,19 @@ func TestParseNDX(t *testing.T) {
 		},
 	}
 
-	fname := "testdata/NDX-components.csv.json"
+	fname := "testdata/DJIA-components.csv.json"
 	wd, err := parseWikiData(fname)
 	if err != nil {
 		t.Fatal(err)
 	}
 	wdr := strings.NewReader(wd.Parsed.Content.Text)
 
-	rows, err := parseNDX(wdr)
+	rows, err := parseDJIA(wdr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	minCnt := 99 // minimum number of symbols
+	minCnt := 29 // minimum number of symbols
 	if len(rows) < minCnt {
 		t.Fatalf("expected at least %d parsed symbols, got: %d", minCnt, len(rows))
 	}

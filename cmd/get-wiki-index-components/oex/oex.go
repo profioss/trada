@@ -1,15 +1,25 @@
-package main
+package oex
 
 import (
 	"fmt"
 	"io"
 	"strings"
 
+	"github.com/profioss/trada/cmd/get-wiki-index-components/parser"
 	"github.com/profioss/trada/model/instrument"
+
 	"golang.org/x/net/html"
 )
 
-func parseNDX(r io.Reader) (output []instrument.Spec, err error) {
+// Parser is wiki parser for DJIA components.
+type Parser struct{}
+
+func init() {
+	parser.Register("OEX", &Parser{})
+}
+
+// Parse parses wiki API data and returns list of instrument.Spec.
+func (p *Parser) Parse(r io.Reader) (output []instrument.Spec, err error) {
 	// HTML DOM walking can enter unexpected branch which could cause panic
 	// e.g. accessing x.FirstChild.NextSibling where FirstChild is nil
 	// report panic(s) as error to simplify error handling
@@ -56,8 +66,8 @@ func parseNDX(r io.Reader) (output []instrument.Spec, err error) {
 
 	for _, r := range rows {
 		iSpec := instrument.Spec{
-			Symbol:       strings.TrimSpace(r[1]),
-			Description:  strings.TrimSpace(r[0]),
+			Symbol:       strings.TrimSpace(r[0]),
+			Description:  strings.TrimSpace(r[1]),
 			SecurityType: instrument.Equity,
 			// Exchange:     strings.TrimSpace(r[x]), // not available at the time
 		}

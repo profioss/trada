@@ -1,11 +1,11 @@
-package main
+package ndx
 
 import (
 	"strings"
 	"testing"
 )
 
-func TestParseSPX(t *testing.T) {
+func TestParseNDX(t *testing.T) {
 	components := []struct {
 		symbol  string
 		company string
@@ -23,32 +23,24 @@ func TestParseSPX(t *testing.T) {
 			company: "Alphabet",
 		},
 		{
-			symbol:  "JNJ",
-			company: "Johnson & Johnson",
-		},
-		{
-			symbol:  "JPM",
-			company: "JPMorgan Chase",
-		},
-		{
 			symbol:  "MSFT",
 			company: "Microsoft",
 		},
 	}
 
-	fname := "testdata/SPX-components.csv.json"
+	fname := "testdata/NDX-components.csv.json"
 	wd, err := parseWikiData(fname)
 	if err != nil {
 		t.Fatal(err)
 	}
 	wdr := strings.NewReader(wd.Parsed.Content.Text)
 
-	rows, err := parseSPX(wdr)
+	rows, err := parseNDX(wdr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	minCnt := 499 // minimum number of symbols
+	minCnt := 99 // minimum number of symbols
 	if len(rows) < minCnt {
 		t.Fatalf("expected at least %d parsed symbols, got: %d", minCnt, len(rows))
 	}

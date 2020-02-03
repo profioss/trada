@@ -1,15 +1,25 @@
-package main
+package spx
 
 import (
 	"fmt"
 	"io"
 	"strings"
 
+	"github.com/profioss/trada/cmd/get-wiki-index-components/parser"
 	"github.com/profioss/trada/model/instrument"
+
 	"golang.org/x/net/html"
 )
 
-func parseOEX(r io.Reader) (output []instrument.Spec, err error) {
+// Parser is wiki parser for DJIA components.
+type Parser struct{}
+
+func init() {
+	parser.Register("SPX", &Parser{})
+}
+
+// Parse parses wiki API data and returns list of instrument.Spec.
+func (p *Parser) Parse(r io.Reader) (output []instrument.Spec, err error) {
 	// HTML DOM walking can enter unexpected branch which could cause panic
 	// e.g. accessing x.FirstChild.NextSibling where FirstChild is nil
 	// report panic(s) as error to simplify error handling
@@ -33,17 +43,18 @@ func parseOEX(r io.Reader) (output []instrument.Spec, err error) {
 				thTd := cell.NextSibling
 				switch {
 				case thTd != nil && thTd.Data == "td":
-					cell := thTd.FirstChild
-					if cell.Type == html.ElementNode && cell.Data == "a" {
-						row = append(row, strings.TrimSpace(cell.FirstChild.Data))
-					} else {
-						row = append(row, strings.TrimSpace(cell.Data))
+					link := thTd.FirstChild
+					if link == nil {
+						continue
+					}
+					if link.Type == html.ElementNode && link.Data == "a" {
+						row = append(row, strings.TrimSpace(link.FirstChild.Data))
 					}
 				case thTd != nil && thTd.Data == "th":
 					// process th if needed
 				}
 			}
-			if len(row) >= 2 {
+			if len(row) >= 3 {
 				rows = append(rows, row)
 			}
 		}

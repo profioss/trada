@@ -16,22 +16,29 @@ import (
 	"sync"
 	"syscall"
 
+	_ "github.com/profioss/trada/cmd/get-wiki-index-components/djia"
+	_ "github.com/profioss/trada/cmd/get-wiki-index-components/ndx"
+	_ "github.com/profioss/trada/cmd/get-wiki-index-components/oex"
+	"github.com/profioss/trada/cmd/get-wiki-index-components/parser"
+	_ "github.com/profioss/trada/cmd/get-wiki-index-components/spx"
 	"github.com/profioss/trada/model/instrument"
 )
 
 const dirPerms os.FileMode = 0755
 const filePerms os.FileMode = 0644
 
+/*
 type parser = func(r io.Reader) ([]instrument.Spec, error)
 
 // Mapping of DataSrc.Name in Config with content parser.
 // NOTE: this is validated - using proper names is required.
 var parsers = map[string]parser{
-	"DJIA": parseDJIA,
-	"OEX":  parseOEX,
-	"SPX":  parseSPX,
-	"NDX":  parseNDX,
+	// "DJIA": parseDJIA,
+	"OEX": parseOEX,
+	"SPX": parseSPX,
+	"NDX": parseNDX,
 }
+*/
 
 func main() {
 	exitCode := 0
@@ -141,15 +148,14 @@ func getNparse(ctx context.Context, app App, ds DataSrc) error {
 }
 
 func parseData(app App, wd wikiData, ds DataSrc) ([]instrument.Spec, error) {
-	p, ok := parsers[ds.Name]
-	if !ok {
-		msg := fmt.Sprintf("No parser for %s", ds.Name)
-		app.log.Error(msg)
-		return []instrument.Spec{}, fmt.Errorf(msg)
+	p, err := parser.Get(ds.Name)
+	if err != nil {
+		app.log.Error(err)
+		return []instrument.Spec{}, err
 	}
 
 	wdr := strings.NewReader(wd.Parsed.Content.Text)
-	components, err := p(wdr)
+	components, err := p.Parse(wdr)
 	if err != nil {
 		app.log.Errorf("%s: parsing table failed: %s", ds.Name, err)
 		return []instrument.Spec{}, err

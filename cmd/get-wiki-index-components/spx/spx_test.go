@@ -1,11 +1,11 @@
-package main
+package spx
 
 import (
 	"strings"
 	"testing"
 )
 
-func TestParseOEX(t *testing.T) {
+func TestParseSPX(t *testing.T) {
 	components := []struct {
 		symbol  string
 		company string
@@ -36,19 +36,19 @@ func TestParseOEX(t *testing.T) {
 		},
 	}
 
-	fname := "testdata/OEX-components.csv.json"
+	fname := "testdata/SPX-components.csv.json"
 	wd, err := parseWikiData(fname)
 	if err != nil {
 		t.Fatal(err)
 	}
 	wdr := strings.NewReader(wd.Parsed.Content.Text)
 
-	rows, err := parseOEX(wdr)
+	rows, err := parseSPX(wdr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	minCnt := 99 // minimum number of symbols
+	minCnt := 499 // minimum number of symbols
 	if len(rows) < minCnt {
 		t.Fatalf("expected at least %d parsed symbols, got: %d", minCnt, len(rows))
 	}
