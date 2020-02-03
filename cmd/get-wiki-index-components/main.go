@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -120,6 +121,12 @@ func getNparse(ctx context.Context, app App, ds DataSrc) error {
 		return err
 	}
 	app.log.Debugf("%s: parseData - OK", ds.Name)
+	sort.Slice(components, func(i, j int) bool { return components[i].Symbol < components[j].Symbol })
+
+	// don't overwrite with insufficient data
+	if len(components) < ds.MinCnt {
+		return fmt.Errorf("%s: expected at least %d components, got %d", ds.Name, ds.MinCnt, len(components))
+	}
 
 	fnameDst := filepath.Join(app.Setup.OutputDir, ds.OutputFile)
 	err = saveData(fnameDst, components)
@@ -128,10 +135,6 @@ func getNparse(ctx context.Context, app App, ds DataSrc) error {
 		return err
 	}
 	app.log.Debugf("%s: saveData to %s - OK", ds.Name, fnameDst)
-
-	if len(components) < ds.MinCnt {
-		return fmt.Errorf("%s: expected at least %d components, got %d", ds.Name, ds.MinCnt, len(components))
-	}
 
 	app.log.Infof("%s: %s - OK", ds.Name, fnameDst)
 	return nil
