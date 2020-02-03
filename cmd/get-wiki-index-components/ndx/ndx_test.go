@@ -1,8 +1,11 @@
 package ndx
 
 import (
+	"os"
 	"strings"
 	"testing"
+
+	"github.com/profioss/trada/pkg/wiki"
 )
 
 func TestParseNDX(t *testing.T) {
@@ -28,14 +31,21 @@ func TestParseNDX(t *testing.T) {
 		},
 	}
 
-	fname := "testdata/NDX-components.csv.json"
-	wd, err := parseWikiData(fname)
+	fname := "../testdata/NDX-components.csv.json"
+	fd, err := os.Open(fname)
+	if err != nil {
+		t.Fatalf("open %s error: %v", fname, err)
+	}
+	defer fd.Close()
+
+	wd, err := wiki.Parse(fd)
 	if err != nil {
 		t.Fatal(err)
 	}
 	wdr := strings.NewReader(wd.Parsed.Content.Text)
 
-	rows, err := parseNDX(wdr)
+	p := &Parser{}
+	rows, err := p.Parse(wdr)
 	if err != nil {
 		t.Fatal(err)
 	}

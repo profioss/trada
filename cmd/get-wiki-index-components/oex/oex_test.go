@@ -1,8 +1,11 @@
 package oex
 
 import (
+	"os"
 	"strings"
 	"testing"
+
+	"github.com/profioss/trada/pkg/wiki"
 )
 
 func TestParseOEX(t *testing.T) {
@@ -36,14 +39,21 @@ func TestParseOEX(t *testing.T) {
 		},
 	}
 
-	fname := "testdata/OEX-components.csv.json"
-	wd, err := parseWikiData(fname)
+	fname := "../testdata/OEX-components.csv.json"
+	fd, err := os.Open(fname)
+	if err != nil {
+		t.Fatalf("open %s error: %v", fname, err)
+	}
+	defer fd.Close()
+
+	wd, err := wiki.Parse(fd)
 	if err != nil {
 		t.Fatal(err)
 	}
 	wdr := strings.NewReader(wd.Parsed.Content.Text)
 
-	rows, err := parseOEX(wdr)
+	p := &Parser{}
+	rows, err := p.Parse(wdr)
 	if err != nil {
 		t.Fatal(err)
 	}

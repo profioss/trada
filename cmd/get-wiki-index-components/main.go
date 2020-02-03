@@ -22,6 +22,7 @@ import (
 	"github.com/profioss/trada/cmd/get-wiki-index-components/parser"
 	_ "github.com/profioss/trada/cmd/get-wiki-index-components/spx"
 	"github.com/profioss/trada/model/instrument"
+	"github.com/profioss/trada/pkg/wiki"
 )
 
 const dirPerms os.FileMode = 0755
@@ -117,7 +118,12 @@ func getNparse(ctx context.Context, app App, ds DataSrc) error {
 		defer os.Remove(fnameSrc)
 	}
 
-	wd, err := parseWikiData(fnameSrc)
+	fd, err := os.Open(fnameSrc)
+	if err != nil {
+		return fmt.Errorf("open %s error: %v", fnameSrc, err)
+	}
+	defer fd.Close()
+	wd, err := wiki.Parse(fd)
 	if err != nil {
 		return err
 	}
@@ -147,7 +153,7 @@ func getNparse(ctx context.Context, app App, ds DataSrc) error {
 	return nil
 }
 
-func parseData(app App, wd wikiData, ds DataSrc) ([]instrument.Spec, error) {
+func parseData(app App, wd wiki.Data, ds DataSrc) ([]instrument.Spec, error) {
 	p, err := parser.Get(ds.Name)
 	if err != nil {
 		app.log.Error(err)
