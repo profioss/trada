@@ -16,30 +16,20 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/profioss/trada/cmd/get-wiki-index-components/parser"
+	"github.com/profioss/trada/model/instrument"
+	"github.com/profioss/trada/pkg/wiki"
+
+	// Mapping of DataSrc.Name in Config with content parser.
+	// NOTE: this is validated - using proper names is required.
 	_ "github.com/profioss/trada/cmd/get-wiki-index-components/djia"
 	_ "github.com/profioss/trada/cmd/get-wiki-index-components/ndx"
 	_ "github.com/profioss/trada/cmd/get-wiki-index-components/oex"
-	"github.com/profioss/trada/cmd/get-wiki-index-components/parser"
 	_ "github.com/profioss/trada/cmd/get-wiki-index-components/spx"
-	"github.com/profioss/trada/model/instrument"
-	"github.com/profioss/trada/pkg/wiki"
 )
 
 const dirPerms os.FileMode = 0755
 const filePerms os.FileMode = 0644
-
-/*
-type parser = func(r io.Reader) ([]instrument.Spec, error)
-
-// Mapping of DataSrc.Name in Config with content parser.
-// NOTE: this is validated - using proper names is required.
-var parsers = map[string]parser{
-	// "DJIA": parseDJIA,
-	"OEX": parseOEX,
-	"SPX": parseSPX,
-	"NDX": parseNDX,
-}
-*/
 
 func main() {
 	exitCode := 0

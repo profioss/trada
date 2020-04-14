@@ -1,0 +1,3 @@
+
+  * detect & omit invalid data - log as warning/error
+
