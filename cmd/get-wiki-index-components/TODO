@@ -1,2 +1,6 @@
 
+* basic check of required tickers
+  e.g. config resources - add list of required tickers a'la testing
+
 * concurrent processing with context
+

@@ -1,3 +1,4 @@
 
   * detect & omit invalid data - log as warning/error
+    example: SPY: 2020-04-10;0.00;0.00;0.00;278.20;0
 

@@ -42,14 +42,14 @@ func (p *Parser) Parse(r io.Reader) (output []instrument.Spec, err error) {
 			for cell := n.FirstChild; cell != nil; cell = cell.NextSibling {
 				thTd := cell.NextSibling
 				switch {
+				case thTd != nil && thTd.Data == "th":
+					fallthrough
 				case thTd != nil && thTd.Data == "td":
 					link := thTd.FirstChild
 					if link != nil && link.Type == html.ElementNode && link.Data == "a" {
 						// extract td element
 						row = append(row, extractTextDJIA(thTd))
 					}
-				case thTd != nil && thTd.Data == "th":
-					// process th if needed
 				}
 			}
 			if len(row) >= 3 {
